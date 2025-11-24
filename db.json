@@ -1,0 +1,510 @@
+{
+  "users": [
+    {
+      "id": "u1",
+      "username": "admin",
+      "role": "admin",
+      "name": "Siti Admin"
+    },
+    {
+      "id": "u3",
+      "username": "apotek",
+      "role": "pharmacist",
+      "name": "Rina Farmasi"
+    },
+    {
+      "id": "doc1",
+      "username": "hartono",
+      "role": "doctor",
+      "name": "dr. Hartono, Sp.PD",
+      "specialty": "Spesialis Penyakit Dalam",
+      "image": "https://i.pravatar.cc/150?img=11"
+    },
+    {
+      "id": "doc2",
+      "username": "anisa",
+      "role": "doctor",
+      "name": "dr. Anisa, Sp.A",
+      "specialty": "Spesialis Anak",
+      "image": "https://i.pravatar.cc/150?img=5"
+    },
+    {
+      "id": "doc3",
+      "username": "budi",
+      "role": "doctor",
+      "name": "dr. Budi, Sp.THT",
+      "specialty": "Spesialis THT",
+      "image": "https://i.pravatar.cc/150?img=3"
+    },
+    {
+      "id": "doc4",
+      "username": "citra",
+      "role": "doctor",
+      "name": "dr. Citra, Sp.OG",
+      "specialty": "Spesialis Kandungan",
+      "image": "https://i.pravatar.cc/150?img=9"
+    },
+    {
+      "id": "doc5",
+      "username": "doni",
+      "role": "doctor",
+      "name": "dr. Doni, Sp.KJ",
+      "specialty": "Spesialis Kejiwaan",
+      "image": "https://i.pravatar.cc/150?img=13"
+    }
+  ],
+  "patients": [
+    {
+      "id": "p1",
+      "name": "Budi Santoso",
+      "nik": "320112345678",
+      "birthDate": "1980-05-12",
+      "address": "Jl. Merdeka No. 1",
+      "phone": "08123456789",
+      "createdAt": "2024-01-01",
+      "type": "BPJS",
+      "insuranceNumber": "00012345678"
+    },
+    {
+      "id": "p2",
+      "name": "Susi Susanti",
+      "nik": "320198765432",
+      "birthDate": "1995-08-17",
+      "address": "Jl. Kebon Jeruk No. 4",
+      "phone": "08198765432",
+      "createdAt": "2024-02-15",
+      "type": "Umum",
+      "insuranceNumber": ""
+    },
+    {
+      "name": "ariel",
+      "nik": "123456789873456",
+      "address": "airmadidi",
+      "birthDate": "2001-02-21",
+      "phone": "08123456",
+      "type": "Umum",
+      "id": "p-1763813552016",
+      "createdAt": "2025-11-22"
+    },
+    {
+      "name": "ariel",
+      "nik": "123456789873456",
+      "address": "unkalb",
+      "birthDate": "2001-02-21",
+      "phone": "08123456",
+      "type": "Umum",
+      "id": "p-1763813572330",
+      "createdAt": "2025-11-22"
+    },
+    {
+      "id": "p-1763993913250",
+      "name": "injilio",
+      "nik": "1212121212",
+      "address": "airmadidi",
+      "birthDate": "2025-11-04",
+      "phone": "1212121212",
+      "type": "Umum",
+      "createdAt": "2025-11-24"
+    },
+    {
+      "id": "p-1763994032626",
+      "name": "injilioo",
+      "nik": "121212",
+      "address": "1212122",
+      "birthDate": "2025-11-04",
+      "phone": "2121212",
+      "type": "Umum",
+      "createdAt": "2025-11-24"
+    },
+    {
+      "id": "p-1763994599050",
+      "name": "lio",
+      "nik": "121212121",
+      "address": "dfdfdfdf",
+      "birthDate": "2025-11-06",
+      "phone": "121211212",
+      "type": "Umum",
+      "createdAt": "2025-11-24"
+    },
+    {
+      "id": "p-1763996901776",
+      "name": "agvina",
+      "nik": "212121212",
+      "address": "airmadidi",
+      "birthDate": "1978-08-11",
+      "phone": "085342810788",
+      "type": "BPJS",
+      "createdAt": "2025-11-24"
+    },
+    {
+      "id": "p-1763997239808",
+      "name": "erol",
+      "nik": "21212",
+      "address": "airmadidi",
+      "birthDate": "1981-08-18",
+      "phone": "085343352218",
+      "type": "BPJS",
+      "createdAt": "2025-11-24"
+    },
+    {
+      "id": "p-1763997241904",
+      "name": "erol",
+      "nik": "21212",
+      "address": "airmadidi",
+      "birthDate": "1981-08-18",
+      "phone": "085343352218",
+      "type": "BPJS",
+      "createdAt": "2025-11-24"
+    },
+    {
+      "id": "p-1763997243648",
+      "name": "erol",
+      "nik": "21212",
+      "address": "airmadidi",
+      "birthDate": "1981-08-18",
+      "phone": "085343352218",
+      "type": "BPJS",
+      "createdAt": "2025-11-24"
+    },
+    {
+      "id": "p-1763997244440",
+      "name": "erol",
+      "nik": "21212",
+      "address": "airmadidi",
+      "birthDate": "1981-08-18",
+      "phone": "085343352218",
+      "type": "BPJS",
+      "createdAt": "2025-11-24"
+    },
+    {
+      "id": "p-1763997245376",
+      "name": "erol",
+      "nik": "21212",
+      "address": "airmadidi",
+      "birthDate": "1981-08-18",
+      "phone": "085343352218",
+      "type": "BPJS",
+      "createdAt": "2025-11-24"
+    },
+    {
+      "id": "p-1763997245600",
+      "name": "erol",
+      "nik": "21212",
+      "address": "airmadidi",
+      "birthDate": "1981-08-18",
+      "phone": "085343352218",
+      "type": "BPJS",
+      "createdAt": "2025-11-24"
+    },
+    {
+      "id": "p-1763997245839",
+      "name": "erol",
+      "nik": "21212",
+      "address": "airmadidi",
+      "birthDate": "1981-08-18",
+      "phone": "085343352218",
+      "type": "BPJS",
+      "createdAt": "2025-11-24"
+    },
+    {
+      "id": "p-1763997248511",
+      "name": "erol",
+      "nik": "21212",
+      "address": "airmadidi",
+      "birthDate": "1981-08-18",
+      "phone": "085343352218",
+      "type": "BPJS",
+      "createdAt": "2025-11-24"
+    },
+    {
+      "id": "p-1763997248695",
+      "name": "erol",
+      "nik": "21212",
+      "address": "airmadidi",
+      "birthDate": "1981-08-18",
+      "phone": "085343352218",
+      "type": "BPJS",
+      "createdAt": "2025-11-24"
+    },
+    {
+      "id": "p-1763997248871",
+      "name": "erol",
+      "nik": "21212",
+      "address": "airmadidi",
+      "birthDate": "1981-08-18",
+      "phone": "085343352218",
+      "type": "BPJS",
+      "createdAt": "2025-11-24"
+    },
+    {
+      "id": "p-1763997249064",
+      "name": "erol",
+      "nik": "21212",
+      "address": "airmadidi",
+      "birthDate": "1981-08-18",
+      "phone": "085343352218",
+      "type": "BPJS",
+      "createdAt": "2025-11-24"
+    },
+    {
+      "id": "p-1763997249336",
+      "name": "erol",
+      "nik": "21212",
+      "address": "airmadidi",
+      "birthDate": "1981-08-18",
+      "phone": "085343352218",
+      "type": "BPJS",
+      "createdAt": "2025-11-24"
+    },
+    {
+      "id": "p-1763997249632",
+      "name": "erol",
+      "nik": "21212",
+      "address": "airmadidi",
+      "birthDate": "1981-08-18",
+      "phone": "085343352218",
+      "type": "BPJS",
+      "createdAt": "2025-11-24"
+    }
+  ],
+  "visits": [
+    {
+      "id": "v-1763730841347",
+      "patientId": "p1",
+      "doctorId": "u2",
+      "date": "2025-11-21",
+      "queueNumber": "A-001",
+      "isEmergency": false,
+      "status": "done"
+    },
+    {
+      "patientId": "p-1763813552016",
+      "doctorId": "u2",
+      "date": "2025-11-22",
+      "queueNumber": "A-002",
+      "isEmergency": false,
+      "status": "done",
+      "id": "v-1763813552154"
+    },
+    {
+      "id": "v-1763994599061",
+      "patientId": "p-1763994599050",
+      "doctorId": "doc1",
+      "date": "2025-11-24",
+      "queueNumber": "A-001",
+      "isEmergency": false,
+      "status": "examining"
+    },
+    {
+      "id": "v-1763996901790",
+      "patientId": "p-1763996901776",
+      "doctorId": "doc1",
+      "date": "2025-11-24",
+      "queueNumber": "A-002",
+      "isEmergency": false,
+      "status": "pharmacy"
+    },
+    {
+      "id": "v-1763997249843",
+      "patientId": "p-1763997241904",
+      "doctorId": "doc2",
+      "date": "2025-11-24",
+      "queueNumber": "A-003",
+      "isEmergency": false,
+      "status": "examining"
+    },
+    {
+      "id": "v-1763997249844",
+      "patientId": "p-1763997243648",
+      "doctorId": "doc2",
+      "date": "2025-11-24",
+      "queueNumber": "A-003",
+      "isEmergency": false,
+      "status": "waiting"
+    },
+    {
+      "id": "v-1763997249845",
+      "patientId": "p-1763997244440",
+      "doctorId": "doc2",
+      "date": "2025-11-24",
+      "queueNumber": "A-003",
+      "isEmergency": false,
+      "status": "waiting"
+    },
+    {
+      "id": "v-1763997249862",
+      "patientId": "p-1763997248511",
+      "doctorId": "doc2",
+      "date": "2025-11-24",
+      "queueNumber": "A-003",
+      "isEmergency": false,
+      "status": "waiting"
+    },
+    {
+      "id": "v-1763997249862",
+      "patientId": "p-1763997248695",
+      "doctorId": "doc2",
+      "date": "2025-11-24",
+      "queueNumber": "A-003",
+      "isEmergency": false,
+      "status": "waiting"
+    },
+    {
+      "id": "v-1763997249880",
+      "patientId": "p-1763997249336",
+      "doctorId": "doc2",
+      "date": "2025-11-24",
+      "queueNumber": "A-003",
+      "isEmergency": false,
+      "status": "waiting"
+    },
+    {
+      "id": "v-1763997249881",
+      "patientId": "p-1763997249632",
+      "doctorId": "doc2",
+      "date": "2025-11-24",
+      "queueNumber": "A-003",
+      "isEmergency": false,
+      "status": "waiting"
+    },
+    {
+      "id": "v-1763997263208",
+      "patientId": "p-1763997249064",
+      "doctorId": "doc2",
+      "date": "2025-11-24",
+      "queueNumber": "A-003",
+      "isEmergency": false,
+      "status": "waiting"
+    }
+  ],
+  "doctorSchedules": [
+    {
+      "id": "ds1",
+      "doctorId": "doc1",
+      "name": "dr. Hartono, Sp.PD",
+      "specialty": "Spesialis Penyakit Dalam",
+      "day": "Senin",
+      "time": "08:00 - 14:00",
+      "status": "Praktek",
+      "quota": 20,
+      "filled": 15,
+      "image": "https://i.pravatar.cc/150?img=11"
+    },
+    {
+      "id": "ds2",
+      "doctorId": "doc2",
+      "name": "dr. Anisa, Sp.A",
+      "specialty": "Spesialis Anak",
+      "day": "Senin",
+      "time": "09:00 - 15:00",
+      "status": "Praktek",
+      "quota": 25,
+      "filled": 18,
+      "image": "https://i.pravatar.cc/150?img=5"
+    },
+    {
+      "id": "ds-1763730862837",
+      "doctorId": "doc3",
+      "name": "dr. Budi, Sp.THT",
+      "specialty": "Spesialis THT",
+      "day": "Jumat",
+      "time": "08:00 - 14:00",
+      "status": "Praktek",
+      "quota": 20,
+      "filled": 0,
+      "image": "https://i.pravatar.cc/150?img=3"
+    },
+    {
+      "doctorId": "doc4",
+      "name": "dr. Citra, Sp.OG",
+      "specialty": "Spesialis Kandungan",
+      "day": "Sabtu",
+      "time": "08:00 - 14:00",
+      "status": "Praktek",
+      "quota": 20,
+      "filled": 0,
+      "image": "https://i.pravatar.cc/150?img=9",
+      "id": "ds-1763813514445"
+    }
+  ],
+  "medicines": [
+    {
+      "id": "m1",
+      "name": "Paracetamol 500mg",
+      "price": 5000,
+      "stock": 100
+    },
+    {
+      "id": "m2",
+      "name": "Amoxicillin 500mg",
+      "price": 12000,
+      "stock": 50
+    }
+  ],
+  "medicalRecords": [
+    {
+      "id": "mr-1763997031744",
+      "visitId": "v-1763996901790",
+      "complaints": "demam sejak 3 hari lalu, capek",
+      "vitalSigns": "suhu 39 derajat, tenggorokan merah",
+      "diagnosis": "tipes, infeksi virus unidentified"
+    }
+  ],
+  "prescriptions": [],
+  "clinicInfo": {
+    "name": "Klinik Sentosa",
+    "address": "Jl. Kesehatan No. 123, Jakarta Selatan",
+    "phone": "021-555-0199",
+    "email": "admin@kliniksentosa.com"
+  },
+  "transactions": [
+    {
+      "id": "INV-20240521-001",
+      "patientName": "Ahmad Subarjo",
+      "description": "Poli Umum / dr. Budi",
+      "amount": 150000,
+      "status": "pending",
+      "date": "2024-05-21",
+      "items": [
+        {
+          "id": "s1",
+          "name": "Jasa Konsultasi Dokter",
+          "quantity": 1,
+          "price": 100000,
+          "type": "service"
+        },
+        {
+          "id": "m1",
+          "name": "Paracetamol 500mg",
+          "quantity": 10,
+          "price": 5000,
+          "type": "medicine"
+        }
+      ]
+    },
+    {
+      "id": "INV-20240521-002",
+      "patientName": "Siti Aminah",
+      "description": "Poli Gigi / drg. Anisa",
+      "amount": 350000,
+      "status": "paid",
+      "date": "2024-05-21",
+      "items": [
+        {
+          "id": "s2",
+          "name": "Tindakan Cabut Gigi",
+          "quantity": 1,
+          "price": 300000,
+          "type": "service"
+        },
+        {
+          "id": "m2",
+          "name": "Amoxicillin 500mg",
+          "quantity": 5,
+          "price": 10000,
+          "type": "medicine"
+        }
+      ]
+    }
+  ]
+}
