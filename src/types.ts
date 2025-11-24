@@ -1,10 +1,11 @@
 export interface User {
+  password: string;
   id: string;
   username: string;
-  role: 'admin' | 'doctor' | 'pharmacist' | 'cashier';
+  role: 'admin' | 'doctor' | 'pharmacist' ;
   name: string;
-  specialty?: string; // Optional: Hanya untuk dokter
-  image?: string;     // Optional: URL Foto
+  specialty?: string;
+  image?: string;
 }
 
 export interface Patient {
@@ -41,7 +42,7 @@ export interface Visit {
 
 export interface DoctorSchedule {
   id: string;
-  doctorId: string; // Link ke User ID
+  doctorId: string; 
   name: string;
   specialty: string;
   day: string;
@@ -60,6 +61,25 @@ export interface MedicalRecord {
   diagnosis: string;
 }
 
+export interface TransactionItem {
+  id: string;
+  name: string;
+  quantity: number;
+  price: number;
+  type: 'service' | 'medicine';
+}
+
+export interface Transaction {
+  id: string;
+  visitId?: string; // TAMBAHAN PENTING: Link ke Kunjungan
+  patientName: string;
+  description: string;
+  amount: number;
+  status: 'pending' | 'paid';
+  date: string;
+  items?: TransactionItem[];
+}
+
 export interface Prescription {
   id: string;
   visitId: string;
@@ -72,24 +92,7 @@ export interface Prescription {
   }[];
   status: 'pending' | 'processed' | 'completed';
 }
-// UPDATE TIPE TRANSAKSI
-export interface TransactionItem {
-  id: string;
-  name: string;
-  quantity: number;
-  price: number;
-  type: 'service' | 'medicine';
-}
 
-export interface Transaction {
-  id: string; // Invoice Number
-  patientName: string;
-  description: string; 
-  amount: number;
-  status: 'pending' | 'paid';
-  date: string;
-  items?: TransactionItem[]; // Tambahan: Detail Item
-}
 export interface ClinicInfo {
   name: string;
   address: string;

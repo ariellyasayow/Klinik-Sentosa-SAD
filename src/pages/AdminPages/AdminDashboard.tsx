@@ -13,18 +13,19 @@ const AdminDashboard: React.FC = () => {
   // State Dashboard Utama
   const [visits, setVisits] = useState<Visit[]>([]);
   const [doctorSchedules, setDoctorSchedules] = useState<DoctorSchedule[]>([]);
-  const [doctorsList, setDoctorsList] = useState<User[]>([]); // State untuk list dokter di dropdown
+  const [doctorsList, setDoctorsList] = useState<User[]>([]); 
   
-  // Search State
+  // Search State (Pasien Lama)
   const [searchResults, setSearchResults] = useState<Patient[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDoctorForSearch, setSelectedDoctorForSearch] = useState(''); // Dokter tujuan untuk "Cari Pasien Lama"
+  const [selectedDoctorForSearch, setSelectedDoctorForSearch] = useState(''); 
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null); // State baru untuk menyimpan pasien terpilih
   
   // Modals Dashboard
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEmergencyModalOpen, setIsEmergencyModalOpen] = useState(false);
   const [emergencyName, setEmergencyName] = useState('');
-  const [emergencyDoctorId, setEmergencyDoctorId] = useState(''); // Dokter tujuan untuk "Darurat"
+  const [emergencyDoctorId, setEmergencyDoctorId] = useState(''); 
   
   // Loading States
   const [isLoadingRegister, setIsLoadingRegister] = useState(false);
@@ -34,7 +35,7 @@ const AdminDashboard: React.FC = () => {
   const [formData, setFormData] = useState({ 
     name: '', nik: '', address: '', birthDate: '', phone: '', 
     type: 'Umum' as 'Umum' | 'BPJS',
-    doctorId: '' // Tambah field doctorId
+    doctorId: '' 
   });
 
   // Helper Tanggal
@@ -45,17 +46,15 @@ const AdminDashboard: React.FC = () => {
 
   const loadData = async () => {
     try {
-      // Load Visits, Patients, Schedules, DAN DOCTORS
       const [allVisits, allPatients, allSchedules, allDoctors] = await Promise.all([
         api.getVisits(), 
         api.getPatients(), 
         api.getDoctorSchedules(),
-        api.getDoctors() // Ambil list dokter
+        api.getDoctors() 
       ]);
       
       setDoctorsList(allDoctors);
 
-      // Join Manual
       const visitsWithPatient = allVisits.map(visit => {
         const foundPatient = allPatients.find(p => p.id === visit.patientId);
         return { ...visit, patient: visit.patient || foundPatient };
@@ -63,7 +62,6 @@ const AdminDashboard: React.FC = () => {
 
       const activeVisits = visitsWithPatient.filter(v => v.status !== 'done');
       
-      // Sort: Darurat -> Reguler -> Skipped
       const sortedVisits = activeVisits.sort((a, b) => {
         if (a.status === 'skipped' && b.status !== 'skipped') return 1;
         if (a.status !== 'skipped' && b.status === 'skipped') return -1;
@@ -77,7 +75,7 @@ const AdminDashboard: React.FC = () => {
     } catch (error) { console.error("Gagal memuat data:", error); }
   };
 
-  // --- LOGIC UTAMA: CREATE VISIT DENGAN DOKTER PILIHAN ---
+  // --- LOGIC UTAMA: CREATE VISIT ---
   const createVisit = async (patientId: string, doctorId: string, isEmergency: boolean) => {
     if (!doctorId) {
       alert("Silakan pilih dokter tujuan terlebih dahulu!");
@@ -85,15 +83,15 @@ const AdminDashboard: React.FC = () => {
     }
 
     const queueCode = isEmergency ? 'E-' : 'A-';
-    // Hitung antrian berdasarkan dokter yang dipilih agar nomor antrian rapi per poli (opsional logic)
-    // Disini kita hitung global per tipe antrian saja biar simpel
-    const count = visits.filter(v => v.isEmergency === isEmergency).length + 1;
-    const queueNumber = queueCode + count.toString().padStart(3, '0');
+    // Hitung antrian per dokter untuk hari ini (opsional: bisa dibuat lebih kompleks)
+    const today = new Date().toISOString().split('T')[0];
+    const existingQueue = visits.filter(v => v.doctorId === doctorId && v.date === today).length;
+    const queueNumber = queueCode + (existingQueue + 1).toString().padStart(3, '0');
     
     await api.addVisit({ 
         patientId, 
-        doctorId: doctorId, // Gunakan dokter yang dipilih param
-        date: new Date().toISOString().split('T')[0], 
+        doctorId: doctorId, 
+        date: today, 
         queueNumber, 
         isEmergency, 
         status: 'waiting' 
@@ -110,21 +108,56 @@ const AdminDashboard: React.FC = () => {
 
   const handleCancelQueue = async (visitId: string) => { if (confirm("Hapus antrian?")) { await api.deleteVisit(visitId); loadData(); } };
 
-  // --- SEARCH & QUICK ADD ---
+  // --- SEARCH & QUICK ADD (PASIEN LAMA) ---
   const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value; setSearchQuery(query);
-    if (query.length > 2) { const results = await api.searchPatients(query); setSearchResults(results); } else { setSearchResults([]); }
+    const query = e.target.value;
+    setSearchQuery(query);
+    
+    if (query.length > 1) { 
+       // Cari pasien berdasarkan Nama atau NIK
+       const results = await api.searchPatients(query);
+       // Filter client-side tambahan untuk akurasi (opsional)
+       const filtered = results.filter(p => 
+         p.name.toLowerCase().includes(query.toLowerCase()) || 
+         p.nik.includes(query)
+       );
+       setSearchResults(filtered);
+    } else { 
+       setSearchResults([]); 
+    }
   };
 
-  const handleAddToQueue = async (patientId: string) => {
+  // Fungsi saat Admin memilih pasien dari dropdown search
+  const handleSelectPatientFromSearch = (patient: Patient) => {
+    setSearchQuery(patient.name); // Isi input dengan nama pasien
+    setSelectedPatient(patient);  // Simpan pasien terpilih ke state
+    setSearchResults([]);         // Tutup dropdown
+  };
+
+  // Fungsi Eksekusi Masuk Antrian (Tombol "Ambil Antrian")
+  const handleProcessQueue = async () => {
+    if (!selectedPatient) {
+       alert("Cari dan pilih pasien terlebih dahulu!");
+       return;
+    }
     if (!selectedDoctorForSearch) {
-      alert("Pilih 'Dokter Tujuan' di dropdown atas pencarian dulu!");
+      alert("Pilih 'Dokter Tujuan' terlebih dahulu!");
       return;
     }
-    if (!confirm("Tambahkan ke antrian?")) return;
     
-    await createVisit(patientId, selectedDoctorForSearch, false); 
-    setSearchQuery(''); setSearchResults([]);
+    if (confirm(`Daftarkan ${selectedPatient.name} ke ${doctorsList.find(d=>d.id===selectedDoctorForSearch)?.name}?`)) {
+       await createVisit(selectedPatient.id, selectedDoctorForSearch, false); 
+       // Reset Form Search
+       setSearchQuery(''); 
+       setSelectedPatient(null);
+       alert("Berhasil masuk antrian!");
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSelectedPatient(null);
+    setSearchResults([]);
   };
 
   // --- REGISTRASI BARU SUBMIT ---
@@ -138,7 +171,6 @@ const AdminDashboard: React.FC = () => {
         name: formData.name, nik: formData.nik, address: formData.address,
         birthDate: formData.birthDate, phone: formData.phone, type: formData.type
       });
-      // Masukkan ke antrian dokter yang dipilih
       await createVisit(newPatient.id, formData.doctorId, false); 
       setIsModalOpen(false);
       setFormData({ name: '', nik: '', address: '', birthDate: '', phone: '', type: 'Umum', doctorId: '' }); 
@@ -154,7 +186,6 @@ const AdminDashboard: React.FC = () => {
     try {
       const tempName = emergencyName.trim() === '' ? 'Pasien Darurat' : emergencyName;
       const newPatient = await api.addPatient({ name: tempName, nik: "DARURAT-" + Date.now(), address: "Data Menyusul (IGD)", birthDate: "1900-01-01", phone: "-", type: 'Umum' });
-      // Masukkan ke antrian dokter yang dipilih
       await createVisit(newPatient.id, emergencyDoctorId, true); 
       setIsEmergencyModalOpen(false); setEmergencyName(''); setEmergencyDoctorId(''); 
       alert("DARURAT MASUK!");
@@ -162,8 +193,6 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleLogout = () => window.location.reload();
-
-  // Hitung Dokter Jaga Hari Ini
   const activeDoctorsCount = doctorSchedules.filter(ds => ds.day === getTodayDayName() && ds.status === 'Praktek').length;
 
   return (
@@ -208,45 +237,81 @@ const AdminDashboard: React.FC = () => {
                 <h2 className="text-xl font-bold text-dark-elements mb-4 flex items-center gap-2"><span className="material-symbols-outlined text-accent-cta">bolt</span> Aksi Cepat</h2>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                   
-                  {/* CARD 1: CARI PASIEN LAMA */}
+                  {/* CARD 1: CARI PASIEN LAMA (FUNGSI UTAMA DIPERBAIKI) */}
                   <div className="flex flex-col gap-4 rounded-xl bg-white p-6 shadow-sm border border-transparent hover:border-blue-200 transition-colors relative z-20">
-                    <p className="text-base font-bold text-dark-elements">Cari Pasien Lama</p>
+                    <div className="flex justify-between items-center">
+                       <p className="text-base font-bold text-dark-elements">Cari Pasien Lama</p>
+                       {selectedPatient && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">Pasien Terpilih</span>}
+                    </div>
                     
-                    {/* DROPDOWN DOKTER TUJUAN SEARCH */}
+                    {/* 1. Pilih Dokter */}
                     <div className="bg-blue-50 p-2 rounded-lg border border-blue-100">
                       <label className="text-[10px] font-bold text-blue-800 uppercase block mb-1">Dokter Tujuan:</label>
                       <select 
-                        className="w-full text-sm bg-white border border-blue-200 rounded p-1 outline-none"
+                        className="w-full text-sm bg-white border border-blue-200 rounded p-1.5 outline-none text-slate-700"
                         value={selectedDoctorForSearch}
                         onChange={(e) => setSelectedDoctorForSearch(e.target.value)}
                       >
                         <option value="">-- Pilih Dokter --</option>
                         {doctorsList.map(doc => (
-                          <option key={doc.id} value={doc.id}>{doc.name}</option>
+                          <option key={doc.id} value={doc.id}>{doc.name} ({doc.specialty})</option>
                         ))}
                       </select>
                     </div>
 
+                    {/* 2. Search Input */}
                     <div className="relative">
                       <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-main/60 text-[20px]">search</span>
-                      <input className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-blue-500" placeholder="Ketik Nama / NIK..." value={searchQuery} onChange={handleSearch} />
-                      {searchResults.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 bg-white rounded-lg shadow-xl border border-gray-100 mt-2 max-h-60 overflow-y-auto z-50">
+                      <input 
+                          className={`w-full rounded-lg border py-2.5 pl-10 pr-8 text-sm outline-none focus:border-blue-500 ${selectedPatient ? 'bg-green-50 border-green-500 text-green-800 font-bold' : 'bg-gray-50 border-gray-200'}`}
+                          placeholder="Ketik Nama / NIK..." 
+                          value={searchQuery} 
+                          onChange={handleSearch} 
+                          disabled={!!selectedPatient} // Disable jika sudah pilih
+                      />
+                      {/* Tombol Clear (X) */}
+                      {(searchQuery || selectedPatient) && (
+                         <button onClick={clearSearch} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500">
+                            <span className="material-symbols-outlined text-lg">close</span>
+                         </button>
+                      )}
+
+                      {/* DROPDOWN HASIL PENCARIAN */}
+                      {searchResults.length > 0 && !selectedPatient && (
+                        <div className="absolute top-full left-0 right-0 bg-white rounded-lg shadow-xl border border-gray-100 mt-2 max-h-60 overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2">
                           {searchResults.map(p => (
-                            <div key={p.id} className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50 flex justify-between items-center group">
-                              <div><p className="font-bold text-sm">{p.name}</p><p className="text-xs text-gray-500">{p.nik}</p></div>
-                              <button onClick={() => handleAddToQueue(p.id)} className="text-xs bg-blue-600 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100">Pilih</button>
+                            <div 
+                               key={p.id} 
+                               className="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-50 flex justify-between items-center group"
+                               onClick={() => handleSelectPatientFromSearch(p)} // KLIK BARIS UNTUK PILIH
+                            >
+                              <div>
+                                 <p className="font-bold text-sm text-slate-800">{p.name}</p>
+                                 <p className="text-xs text-gray-500">{p.nik} • {p.type}</p>
+                              </div>
+                              <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded opacity-0 group-hover:opacity-100">Pilih</span>
                             </div>
                           ))}
                         </div>
                       )}
                     </div>
+
+                    {/* 3. Tombol Eksekusi */}
+                    <button 
+                       onClick={handleProcessQueue}
+                       disabled={!selectedPatient || !selectedDoctorForSearch}
+                       className="w-full py-2 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:bg-gray-200 disabled:text-gray-400 bg-blue-600 text-white hover:bg-blue-700 shadow-md"
+                    >
+                       <span className="material-symbols-outlined text-lg">queue</span>
+                       Ambil Antrian
+                    </button>
                   </div>
 
                   {/* CARD 2: BARU */}
                   <div className="flex flex-col gap-4 rounded-xl bg-white p-6 shadow-sm border border-transparent hover:border-blue-200 transition-colors">
                     <p className="text-base font-bold text-dark-elements">Pasien Baru</p>
-                    <button onClick={() => setIsModalOpen(true)} className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white active:scale-95 hover:bg-blue-700 shadow-md hover:shadow-lg shadow-blue-200 transition-all">
+                    <p className="text-xs text-gray-500">Belum pernah berobat sebelumnya?</p>
+                    <button onClick={() => setIsModalOpen(true)} className="flex w-full items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-bold text-white active:scale-95 hover:bg-teal-700 shadow-md hover:shadow-lg shadow-teal-200 transition-all mt-auto">
                       <span className="material-symbols-outlined text-[20px]">person_add</span><span>Registrasi Baru</span>
                     </button>
                   </div>
@@ -254,7 +319,8 @@ const AdminDashboard: React.FC = () => {
                   {/* CARD 3: DARURAT */}
                   <div className="flex flex-col gap-4 rounded-xl bg-white p-6 shadow-sm border border-red-100 hover:border-red-300 transition-colors">
                     <p className="text-base font-bold text-red-600 flex items-center gap-2">Pasien Darurat <span className="animate-pulse h-2 w-2 rounded-full bg-red-600"></span></p>
-                    <button onClick={() => setIsEmergencyModalOpen(true)} className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-bold text-white active:scale-95 hover:bg-red-700 shadow-md hover:shadow-lg ring-2 ring-white ring-offset-2 ring-offset-red-50 transition-all">
+                    <p className="text-xs text-red-400">Masuk jalur prioritas IGD segera.</p>
+                    <button onClick={() => setIsEmergencyModalOpen(true)} className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-bold text-white active:scale-95 hover:bg-red-700 shadow-md hover:shadow-lg ring-2 ring-white ring-offset-2 ring-offset-red-50 transition-all mt-auto">
                       <span className="material-symbols-outlined text-[20px]">e911_emergency</span><span>Daftarkan Darurat</span>
                     </button>
                   </div>
@@ -264,7 +330,7 @@ const AdminDashboard: React.FC = () => {
               {/* Table & Stats Grid */}
               <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
                 
-                {/* COL 1: TABLE (2/3 Width) */}
+                {/* COL 1: TABLE */}
                 <div className="lg:col-span-2">
                   <h2 className="text-xl font-bold text-dark-elements mb-4 flex items-center justify-between">
                     <span>Antrian Langsung</span>
@@ -280,7 +346,6 @@ const AdminDashboard: React.FC = () => {
                           <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-400 italic">Belum ada antrian.</td></tr>
                         ) : (
                           visits.map((visit) => {
-                            // Cari nama dokter berdasarkan doctorId di visit
                             const docName = doctorsList.find(d => d.id === visit.doctorId)?.name || 'Tidak Diketahui';
                             return (
                               <tr key={visit.id} className={`hover:bg-gray-50 transition-colors ${visit.isEmergency ? 'bg-red-50/30 border-l-4 border-red-500' : ''} ${visit.status === 'skipped' ? 'bg-gray-50 opacity-60' : ''}`}>
@@ -306,30 +371,17 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                {/* COL 2: STATS & SCHEDULE (1/3 Width) */}
+                {/* COL 2: STATS */}
                 <div className="lg:col-span-1 space-y-4">
                   <h2 className="text-xl font-bold text-dark-elements">Statistik</h2>
-                  
                   <div className="flex items-center gap-4 rounded-xl bg-white p-6 shadow-sm border border-transparent hover:border-blue-200 transition-all">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-600">
-                      <span className="material-symbols-outlined text-3xl">groups</span>
-                    </div>
-                    <div>
-                      <p className="text-3xl font-bold text-dark-elements">{visits.length}</p>
-                      <p className="text-sm text-gray-500 font-medium">Pasien Aktif</p>
-                    </div>
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-600"><span className="material-symbols-outlined text-3xl">groups</span></div>
+                    <div><p className="text-3xl font-bold text-dark-elements">{visits.length}</p><p className="text-sm text-gray-500 font-medium">Pasien Aktif</p></div>
                   </div>
-
                   <div className="flex items-center gap-4 rounded-xl bg-white p-6 shadow-sm border border-transparent hover:border-green-200 transition-all">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-50 text-green-600">
-                      <span className="material-symbols-outlined text-3xl">stethoscope</span>
-                    </div>
-                    <div>
-                      <p className="text-3xl font-bold text-dark-elements">{activeDoctorsCount}</p>
-                      <p className="text-sm text-gray-500 font-medium">Dokter Jaga</p>
-                    </div>
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-50 text-green-600"><span className="material-symbols-outlined text-3xl">stethoscope</span></div>
+                    <div><p className="text-3xl font-bold text-dark-elements">{activeDoctorsCount}</p><p className="text-sm text-gray-500 font-medium">Dokter Jaga</p></div>
                   </div>
-
                   <div className="rounded-xl bg-slate-800 text-white shadow-sm mt-4 relative overflow-hidden">
                     <div className="absolute top-2 right-2 opacity-5"><span className="material-symbols-outlined text-6xl">calendar_month</span></div>
                     <div className="relative z-10 p-6">
@@ -339,20 +391,13 @@ const AdminDashboard: React.FC = () => {
                           {doctorSchedules.filter(ds => ds.day === getTodayDayName()).slice(0, 3).map(ds => (
                               <div key={ds.id} className="flex items-center justify-between text-sm">
                                 <span className="text-slate-200 truncate max-w-[120px]">{ds.name}</span>
-                                {ds.status === 'Praktek' ? (
-                                  <span className="text-xs text-emerald-300 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">{ds.time}</span>
-                                ) : (
-                                  <span className="text-xs text-red-300 bg-red-500/10 px-2 py-1 rounded border border-red-500/20">{ds.status}</span>
-                                )}
+                                {ds.status === 'Praktek' ? (<span className="text-xs text-emerald-300 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">{ds.time}</span>) : (<span className="text-xs text-red-300 bg-red-500/10 px-2 py-1 rounded border border-red-500/20">{ds.status}</span>)}
                               </div>
                           ))}
-                          {doctorSchedules.filter(ds => ds.day === getTodayDayName()).length === 0 && (
-                             <p className="text-xs text-slate-500 italic text-center">Tidak ada jadwal praktek hari ini.</p>
-                          )}
+                          {doctorSchedules.filter(ds => ds.day === getTodayDayName()).length === 0 && (<p className="text-xs text-slate-500 italic text-center">Tidak ada jadwal praktek hari ini.</p>)}
                        </div>
                     </div>
                   </div>
-
                 </div>
               </div>
             </div>
@@ -374,42 +419,16 @@ const AdminDashboard: React.FC = () => {
           {isModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
               <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl p-6 mx-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-bold text-slate-800">Registrasi Reguler</h3>
-                  <button onClick={() => setIsModalOpen(false)}><span className="material-symbols-outlined text-gray-400">close</span></button>
-                </div>
+                <div className="flex justify-between items-center mb-4"><h3 className="text-xl font-bold text-slate-800">Registrasi Reguler</h3><button onClick={() => setIsModalOpen(false)}><span className="material-symbols-outlined text-gray-400">close</span></button></div>
                 <form onSubmit={handleRegisterSubmit} className="flex flex-col gap-4">
-                    {/* INPUT DOKTER TUJUAN */}
-                    <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-1">Pilih Dokter Tujuan</label>
-                      <select 
-                        required 
-                        className="w-full rounded-lg border-gray-300 p-3 text-sm bg-gray-50 focus:bg-white border outline-none focus:ring-2 focus:ring-blue-200"
-                        value={formData.doctorId}
-                        onChange={e => setFormData({...formData, doctorId: e.target.value})}
-                      >
-                        <option value="" disabled>-- Pilih Dokter --</option>
-                        {doctorsList.map(doc => (
-                          <option key={doc.id} value={doc.id}>{doc.name} - {doc.specialty}</option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div className="flex gap-4 mb-1">
-                      <label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="type" className="accent-blue-600" checked={formData.type === 'Umum'} onChange={() => setFormData({...formData, type: 'Umum'})} /><span className="text-sm font-medium">Umum</span></label>
-                      <label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="type" className="accent-green-600" checked={formData.type === 'BPJS'} onChange={() => setFormData({...formData, type: 'BPJS'})} /><span className="text-sm font-medium text-green-700">BPJS</span></label>
-                    </div>
+                    {/* INPUT DOKTER TUJUAN REGISTRASI BARU */}
+                    <div><label className="block text-sm font-bold text-gray-700 mb-1">Pilih Dokter Tujuan</label><select required className="w-full rounded-lg border-gray-300 p-3 text-sm bg-gray-50 focus:bg-white border outline-none focus:ring-2 focus:ring-blue-200" value={formData.doctorId} onChange={e => setFormData({...formData, doctorId: e.target.value})}><option value="" disabled>-- Pilih Dokter --</option>{doctorsList.map(doc => (<option key={doc.id} value={doc.id}>{doc.name} - {doc.specialty}</option>))}</select></div>
+                    <div className="flex gap-4 mb-1"><label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="type" className="accent-blue-600" checked={formData.type === 'Umum'} onChange={() => setFormData({...formData, type: 'Umum'})} /><span className="text-sm font-medium">Umum</span></label><label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="type" className="accent-green-600" checked={formData.type === 'BPJS'} onChange={() => setFormData({...formData, type: 'BPJS'})} /><span className="text-sm font-medium text-green-700">BPJS</span></label></div>
                     <input required className="w-full rounded-lg border-gray-300 p-3 text-sm" placeholder="Nama Lengkap" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
                     <input required className="w-full rounded-lg border-gray-300 p-3 text-sm" placeholder="NIK" value={formData.nik} onChange={e => setFormData({...formData, nik: e.target.value})} />
                     <textarea required className="w-full rounded-lg border-gray-300 p-3 text-sm" placeholder="Alamat Lengkap" rows={2} value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})}></textarea>
-                    <div className="grid grid-cols-2 gap-4">
-                      <input required type="date" className="w-full rounded-lg border-gray-300 p-3 text-sm" value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})} />
-                      <input required className="w-full rounded-lg border-gray-300 p-3 text-sm" placeholder="No HP" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
-                    </div>
-                    <div className="flex items-center justify-end gap-3 pt-2">
-                      <button type="button" onClick={() => setIsModalOpen(false)} className="rounded-lg bg-gray-200 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-300">Batal</button>
-                      <button type="submit" className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-blue-700 shadow-lg shadow-blue-200">Simpan & Daftar</button>
-                    </div>
+                    <div className="grid grid-cols-2 gap-4"><input required type="date" className="w-full rounded-lg border-gray-300 p-3 text-sm" value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})} /><input required className="w-full rounded-lg border-gray-300 p-3 text-sm" placeholder="No HP" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} /></div>
+                    <div className="flex items-center justify-end gap-3 pt-2"><button type="button" onClick={() => setIsModalOpen(false)} className="rounded-lg bg-gray-200 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-300">Batal</button><button type="submit" className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-blue-700 shadow-lg shadow-blue-200">Simpan & Daftar</button></div>
                 </form>
               </div>
             </div>
@@ -420,35 +439,11 @@ const AdminDashboard: React.FC = () => {
             <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
               <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" onClick={() => setIsEmergencyModalOpen(false)}></div>
               <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl relative z-10 animate-in zoom-in-95 duration-200">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 text-red-600 animate-bounce"><span className="material-symbols-outlined text-4xl">emergency</span></div>
-                    <h2 className="mb-2 text-2xl font-bold text-slate-900">Pendaftaran Darurat</h2>
-                    <p className="mb-6 text-sm text-slate-500">Input nama untuk antrian prioritas.</p>
-                  </div>
+                  <div className="flex flex-col items-center text-center"><div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 text-red-600 animate-bounce"><span className="material-symbols-outlined text-4xl">emergency</span></div><h2 className="mb-2 text-2xl font-bold text-slate-900">Pendaftaran Darurat</h2><p className="mb-6 text-sm text-slate-500">Input nama untuk antrian prioritas.</p></div>
                   <div className="space-y-6">
-                    {/* INPUT DOKTER DARURAT */}
-                    <div>
-                      <label className="mb-2 block text-sm font-bold text-slate-700">Pilih Dokter IGD / Tujuan</label>
-                      <select 
-                         className="w-full rounded-lg border-gray-300 py-3 px-4 text-slate-800 border focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none"
-                         value={emergencyDoctorId}
-                         onChange={(e) => setEmergencyDoctorId(e.target.value)}
-                      >
-                        <option value="">-- Pilih Dokter --</option>
-                        {doctorsList.map(doc => (
-                          <option key={doc.id} value={doc.id}>{doc.name}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-slate-700" htmlFor="patient-name">Nama Pasien (Opsional)</label>
-                      <input value={emergencyName} onChange={(e) => setEmergencyName(e.target.value)} className="w-full rounded-lg border-gray-300 py-3 px-4 text-slate-800 border focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none" id="patient-name" placeholder="cth: John Doe" type="text" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <button onClick={() => setIsEmergencyModalOpen(false)} className="flex items-center justify-center gap-2 rounded-lg bg-gray-200 px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-300"><span>Batal</span></button>
-                      <button onClick={handleEmergencySubmit} disabled={isLoadingEmergency} className="flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-3 text-sm font-bold text-white hover:bg-red-700 shadow-lg shadow-red-200 disabled:opacity-70">{isLoadingEmergency ? <span>Memproses...</span> : ( <> <span className="material-symbols-outlined text-base">priority_high</span><span>Prioritas Utama</span> </> )}</button>
-                    </div>
+                    <div><label className="mb-2 block text-sm font-bold text-slate-700">Pilih Dokter IGD / Tujuan</label><select className="w-full rounded-lg border-gray-300 py-3 px-4 text-slate-800 border focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none" value={emergencyDoctorId} onChange={(e) => setEmergencyDoctorId(e.target.value)}><option value="">-- Pilih Dokter --</option>{doctorsList.map(doc => (<option key={doc.id} value={doc.id}>{doc.name}</option>))}</select></div>
+                    <div><label className="mb-2 block text-sm font-medium text-slate-700" htmlFor="patient-name">Nama Pasien (Opsional)</label><input value={emergencyName} onChange={(e) => setEmergencyName(e.target.value)} className="w-full rounded-lg border-gray-300 py-3 px-4 text-slate-800 border focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none" id="patient-name" placeholder="cth: John Doe" type="text" /></div>
+                    <div className="grid grid-cols-2 gap-4"><button onClick={() => setIsEmergencyModalOpen(false)} className="flex items-center justify-center gap-2 rounded-lg bg-gray-200 px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-300"><span>Batal</span></button><button onClick={handleEmergencySubmit} disabled={isLoadingEmergency} className="flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-3 text-sm font-bold text-white hover:bg-red-700 shadow-lg shadow-red-200 disabled:opacity-70">{isLoadingEmergency ? <span>Memproses...</span> : ( <> <span className="material-symbols-outlined text-base">priority_high</span><span>Prioritas Utama</span> </> )}</button></div>
                   </div>
               </div>
             </div>
@@ -460,10 +455,7 @@ const AdminDashboard: React.FC = () => {
 };
 
 const NavItem = ({ icon, label, active = false, onClick }: { icon: string, label: string, active?: boolean, onClick?: () => void }) => (
-  <button onClick={onClick} className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200 ${active ? 'bg-blue-50 text-blue-600 font-bold' : 'text-text-main hover:bg-gray-100'}`}>
-    <span className="material-symbols-outlined">{icon}</span>
-    <span className="text-sm">{label}</span>
-  </button>
+  <button onClick={onClick} className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200 ${active ? 'bg-blue-50 text-blue-600 font-bold' : 'text-text-main hover:bg-gray-100'}`}><span className="material-symbols-outlined">{icon}</span><span className="text-sm">{label}</span></button>
 );
 
 const StatusBadge = ({ status }: { status: string }) => {

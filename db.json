@@ -3,54 +3,74 @@
     {
       "id": "u1",
       "username": "admin",
+      "password": "123",
       "role": "admin",
-      "name": "Siti Admin"
+      "name": "Ariel Admin"
     },
     {
       "id": "u3",
       "username": "apotek",
+      "password": "123",
       "role": "pharmacist",
-      "name": "Rina Farmasi"
+      "name": "Injilio Farmasi"
+    },
+    {
+      "id": "u4",
+      "username": "kasir",
+      "password": "123",
+      "role": "cashier",
+      "name": "Karen Kasir"
     },
     {
       "id": "doc1",
-      "username": "hartono",
+      "username": "ian",
+      "password": "123",
       "role": "doctor",
-      "name": "dr. Hartono, Sp.PD",
+      "name": "dr. Ian, Sp.PD",
       "specialty": "Spesialis Penyakit Dalam",
       "image": "https://i.pravatar.cc/150?img=11"
     },
     {
       "id": "doc2",
-      "username": "anisa",
+      "username": "stivo",
+      "password": "123",
       "role": "doctor",
-      "name": "dr. Anisa, Sp.A",
+      "name": "dr. Stivo, Sp.A",
       "specialty": "Spesialis Anak",
       "image": "https://i.pravatar.cc/150?img=5"
     },
     {
       "id": "doc3",
-      "username": "budi",
+      "username": "jordan",
+      "password": "123",
       "role": "doctor",
-      "name": "dr. Budi, Sp.THT",
+      "name": "dr. Jordan, Sp.THT",
       "specialty": "Spesialis THT",
       "image": "https://i.pravatar.cc/150?img=3"
     },
     {
       "id": "doc4",
-      "username": "citra",
+      "username": "dion",
+      "password": "123",
       "role": "doctor",
-      "name": "dr. Citra, Sp.OG",
+      "name": "dr. Dion, Sp.OG",
       "specialty": "Spesialis Kandungan",
       "image": "https://i.pravatar.cc/150?img=9"
     },
     {
       "id": "doc5",
-      "username": "doni",
+      "username": "ivana",
+      "password": "123",
       "role": "doctor",
-      "name": "dr. Doni, Sp.KJ",
+      "name": "dr. Ivana, Sp.KJ",
       "specialty": "Spesialis Kejiwaan",
       "image": "https://i.pravatar.cc/150?img=13"
+    },
+    {
+      "id": "u-1764016225676",
+      "name": "chritian",
+      "username": "tian",
+      "role": "admin"
     }
   ],
   "patients": [
@@ -265,6 +285,26 @@
       "phone": "085343352218",
       "type": "BPJS",
       "createdAt": "2025-11-24"
+    },
+    {
+      "id": "p-1764010592401",
+      "name": "johndoe",
+      "nik": "DARURAT-1764010592400",
+      "address": "Data Menyusul (IGD)",
+      "birthDate": "1900-01-01",
+      "phone": "-",
+      "type": "Umum",
+      "createdAt": "2025-11-24"
+    },
+    {
+      "id": "p-1764012508077",
+      "name": "jorw",
+      "nik": "123456789",
+      "address": "airmadidi",
+      "birthDate": "2003-12-08",
+      "phone": "8234567",
+      "type": "Umum",
+      "createdAt": "2025-11-24"
     }
   ],
   "visits": [
@@ -287,94 +327,31 @@
       "id": "v-1763813552154"
     },
     {
-      "id": "v-1763994599061",
-      "patientId": "p-1763994599050",
-      "doctorId": "doc1",
-      "date": "2025-11-24",
-      "queueNumber": "A-001",
-      "isEmergency": false,
-      "status": "examining"
-    },
-    {
-      "id": "v-1763996901790",
-      "patientId": "p-1763996901776",
-      "doctorId": "doc1",
-      "date": "2025-11-24",
-      "queueNumber": "A-002",
-      "isEmergency": false,
-      "status": "pharmacy"
-    },
-    {
       "id": "v-1763997249843",
       "patientId": "p-1763997241904",
       "doctorId": "doc2",
       "date": "2025-11-24",
       "queueNumber": "A-003",
       "isEmergency": false,
-      "status": "examining"
+      "status": "done"
     },
     {
-      "id": "v-1763997249844",
-      "patientId": "p-1763997243648",
-      "doctorId": "doc2",
+      "id": "v-1764013718332",
+      "patientId": "p-1763813572330",
+      "doctorId": "doc4",
       "date": "2025-11-24",
-      "queueNumber": "A-003",
+      "queueNumber": "A-001",
       "isEmergency": false,
-      "status": "waiting"
+      "status": "done"
     },
     {
-      "id": "v-1763997249845",
-      "patientId": "p-1763997244440",
-      "doctorId": "doc2",
+      "id": "v-1764014698271",
+      "patientId": "p-1763813552016",
+      "doctorId": "doc4",
       "date": "2025-11-24",
-      "queueNumber": "A-003",
+      "queueNumber": "A-001",
       "isEmergency": false,
-      "status": "waiting"
-    },
-    {
-      "id": "v-1763997249862",
-      "patientId": "p-1763997248511",
-      "doctorId": "doc2",
-      "date": "2025-11-24",
-      "queueNumber": "A-003",
-      "isEmergency": false,
-      "status": "waiting"
-    },
-    {
-      "id": "v-1763997249862",
-      "patientId": "p-1763997248695",
-      "doctorId": "doc2",
-      "date": "2025-11-24",
-      "queueNumber": "A-003",
-      "isEmergency": false,
-      "status": "waiting"
-    },
-    {
-      "id": "v-1763997249880",
-      "patientId": "p-1763997249336",
-      "doctorId": "doc2",
-      "date": "2025-11-24",
-      "queueNumber": "A-003",
-      "isEmergency": false,
-      "status": "waiting"
-    },
-    {
-      "id": "v-1763997249881",
-      "patientId": "p-1763997249632",
-      "doctorId": "doc2",
-      "date": "2025-11-24",
-      "queueNumber": "A-003",
-      "isEmergency": false,
-      "status": "waiting"
-    },
-    {
-      "id": "v-1763997263208",
-      "patientId": "p-1763997249064",
-      "doctorId": "doc2",
-      "date": "2025-11-24",
-      "queueNumber": "A-003",
-      "isEmergency": false,
-      "status": "waiting"
+      "status": "done"
     }
   ],
   "doctorSchedules": [
@@ -432,25 +409,152 @@
       "id": "m1",
       "name": "Paracetamol 500mg",
       "price": 5000,
-      "stock": 100
+      "stock": 90
     },
     {
       "id": "m2",
       "name": "Amoxicillin 500mg",
       "price": 12000,
-      "stock": 50
+      "stock": 44
     }
   ],
   "medicalRecords": [
     {
       "id": "mr-1763997031744",
-      "visitId": "v-1763996901790",
+      "visitId": null,
       "complaints": "demam sejak 3 hari lalu, capek",
       "vitalSigns": "suhu 39 derajat, tenggorokan merah",
       "diagnosis": "tipes, infeksi virus unidentified"
+    },
+    {
+      "id": "mr-1764010255891",
+      "visitId": null,
+      "complaints": "sakit gigi",
+      "vitalSigns": "mata memerah",
+      "diagnosis": "patah hati"
+    },
+    {
+      "id": "mr-1764010736046",
+      "visitId": null,
+      "complaints": "ss",
+      "vitalSigns": "ss",
+      "diagnosis": "ss"
+    },
+    {
+      "id": "mr-1764011041361",
+      "visitId": null,
+      "complaints": "sakit perut",
+      "vitalSigns": "kemerahan",
+      "diagnosis": "maag"
+    },
+    {
+      "id": "mr-1764012402720",
+      "visitId": null,
+      "complaints": "mual",
+      "vitalSigns": "membengkak",
+      "diagnosis": "hamil"
+    },
+    {
+      "id": "mr-1764012547050",
+      "visitId": null,
+      "complaints": "ss",
+      "vitalSigns": "ss",
+      "diagnosis": "ss"
+    },
+    {
+      "id": "mr-1764013474743",
+      "visitId": null,
+      "complaints": "demam",
+      "vitalSigns": "suhu 38c",
+      "diagnosis": "tbc"
+    },
+    {
+      "id": "mr-1764013764453",
+      "visitId": "v-1764013718332",
+      "complaints": "pusing",
+      "vitalSigns": "retak tengkorak",
+      "diagnosis": "geger"
+    },
+    {
+      "id": "mr-1764014747183",
+      "visitId": "v-1764014698271",
+      "complaints": "sakit perut",
+      "vitalSigns": "kemerahan lambung",
+      "diagnosis": "maag"
     }
   ],
-  "prescriptions": [],
+  "prescriptions": [
+    {
+      "id": "pr-1764010256150",
+      "visitId": null,
+      "status": "pending",
+      "items": [
+        {
+          "medicineId": "m2",
+          "medicineName": "Amoxicillin 500mg",
+          "price": 12000,
+          "dosage": "3x1",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "id": "pr-1764011041608",
+      "visitId": null,
+      "status": "pending",
+      "items": [
+        {
+          "medicineId": "m1",
+          "medicineName": "Paracetamol 500mg",
+          "price": 5000,
+          "dosage": "eee",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "id": "pr-1764012403001",
+      "visitId": null,
+      "status": "pending",
+      "items": [
+        {
+          "medicineId": "m1",
+          "medicineName": "Paracetamol 500mg",
+          "price": 5000,
+          "dosage": "2x1",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "id": "pr-1764013474977",
+      "visitId": null,
+      "status": "pending",
+      "items": [
+        {
+          "medicineId": "m1",
+          "medicineName": "Paracetamol 500mg",
+          "price": 5000,
+          "dosage": "1",
+          "quantity": 5
+        }
+      ]
+    },
+    {
+      "id": "pr-1764014747403",
+      "visitId": "v-1764014698271",
+      "status": "pending",
+      "items": [
+        {
+          "medicineId": "m1",
+          "medicineName": "Paracetamol 500mg",
+          "price": 5000,
+          "dosage": "3x1",
+          "quantity": 2
+        }
+      ]
+    }
+  ],
   "clinicInfo": {
     "name": "Klinik Sentosa",
     "address": "Jl. Kesehatan No. 123, Jakarta Selatan",
@@ -463,7 +567,7 @@
       "patientName": "Ahmad Subarjo",
       "description": "Poli Umum / dr. Budi",
       "amount": 150000,
-      "status": "pending",
+      "status": "paid",
       "date": "2024-05-21",
       "items": [
         {
@@ -503,6 +607,179 @@
           "quantity": 5,
           "price": 10000,
           "type": "medicine"
+        }
+      ]
+    },
+    {
+      "id": "INV-1764010426278",
+      "patientName": "Tanpa Nama",
+      "description": "Farmasi & Poli (No. Antrian A-001)",
+      "amount": 186000,
+      "status": "pending",
+      "date": "2025-11-24",
+      "items": [
+        {
+          "id": "m2",
+          "name": "Amoxicillin 500mg",
+          "quantity": 3,
+          "price": 36000,
+          "type": "medicine"
+        },
+        {
+          "id": "svc-doc",
+          "name": "Jasa Konsultasi Dokter",
+          "quantity": 1,
+          "price": 150000,
+          "type": "service"
+        }
+      ]
+    },
+    {
+      "id": "INV-1764010824136",
+      "patientName": "Tanpa Nama",
+      "description": "Farmasi & Poli (No. Antrian E-001)",
+      "amount": 186000,
+      "status": "pending",
+      "date": "2025-11-24",
+      "items": [
+        {
+          "id": "m2",
+          "name": "Amoxicillin 500mg",
+          "quantity": 3,
+          "price": 36000,
+          "type": "medicine"
+        },
+        {
+          "id": "svc-doc",
+          "name": "Jasa Konsultasi Dokter",
+          "quantity": 1,
+          "price": 150000,
+          "type": "service"
+        }
+      ]
+    },
+    {
+      "id": "INV-1764012296848",
+      "visitId": null,
+      "patientName": "Tanpa Nama",
+      "description": "Farmasi & Poli (Antrian A-001)",
+      "amount": 155000,
+      "status": "pending",
+      "date": "2025-11-24",
+      "items": [
+        {
+          "id": "m1",
+          "name": "Paracetamol 500mg",
+          "quantity": 1,
+          "price": 5000,
+          "type": "medicine"
+        },
+        {
+          "id": "svc-doc",
+          "name": "Jasa Konsultasi Dokter",
+          "quantity": 1,
+          "price": 150000,
+          "type": "service"
+        }
+      ]
+    },
+    {
+      "id": "INV-1764012438456",
+      "visitId": null,
+      "patientName": "Tanpa Nama",
+      "description": "Farmasi & Poli (Antrian A-002)",
+      "amount": 155000,
+      "status": "pending",
+      "date": "2025-11-24",
+      "items": [
+        {
+          "id": "m1",
+          "name": "Paracetamol 500mg",
+          "quantity": 1,
+          "price": 5000,
+          "type": "medicine"
+        },
+        {
+          "id": "svc-doc",
+          "name": "Jasa Konsultasi Dokter",
+          "quantity": 1,
+          "price": 150000,
+          "type": "service"
+        }
+      ]
+    },
+    {
+      "id": "INV-1764013612587",
+      "visitId": null,
+      "patientName": "jorw",
+      "description": "Farmasi & Poli (No. A-002)",
+      "amount": 155000,
+      "status": "paid",
+      "date": "2025-11-24",
+      "items": [
+        {
+          "id": "m1",
+          "name": "Paracetamol 500mg",
+          "quantity": 1,
+          "price": 5000,
+          "type": "medicine"
+        },
+        {
+          "id": "svc-doc",
+          "name": "Jasa Konsultasi Dokter",
+          "quantity": 1,
+          "price": 150000,
+          "type": "service"
+        }
+      ]
+    },
+    {
+      "id": "INV-1764013789495",
+      "visitId": "v-1764013718332",
+      "patientName": "ariel",
+      "description": "Farmasi & Poli (No. A-001)",
+      "amount": 175000,
+      "status": "paid",
+      "date": "2025-11-24",
+      "items": [
+        {
+          "id": "m1",
+          "name": "Paracetamol 500mg",
+          "quantity": 5,
+          "price": 25000,
+          "type": "medicine"
+        },
+        {
+          "id": "svc-doc",
+          "name": "Jasa Konsultasi Dokter",
+          "quantity": 1,
+          "price": 150000,
+          "type": "service"
+        }
+      ]
+    },
+    {
+      "id": "INV-1764014784173",
+      "visitId": "v-1764014698271",
+      "patientName": "ariel",
+      "description": "Farmasi & Poli (No. A-001)",
+      "amount": 160000,
+      "status": "paid",
+      "date": "2025-11-24",
+      "items": [
+        {
+          "id": "m1",
+          "name": "Paracetamol 500mg",
+          "quantity": 2,
+          "price": 10000,
+          "type": "medicine"
+        },
+        {
+          "id": "svc-doc",
+          "name": "Jasa Konsultasi Dokter",
+          "quantity": 1,
+          "price": 150000,
+          "type": "service"
         }
       ]
     }

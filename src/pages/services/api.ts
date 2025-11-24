@@ -56,6 +56,11 @@ export const api = {
     const res = await fetch(`${BASE_URL}/visits?_expand=patient`);
     return handleResponse(res);
   },
+  getDoctorQueue: async (doctorId: string): Promise<Visit[]> => {
+    const res = await fetch(`${BASE_URL}/visits?doctorId=${doctorId}&_expand=patient`);
+    const allVisits = await handleResponse(res);
+    return allVisits.filter((v: Visit) => v.status === 'waiting' || v.status === 'examining');
+  },
   addVisit: async (visit: Omit<Visit, 'id'>): Promise<Visit> => {
     const newVisit = { ...visit, id: 'v-' + Date.now() };
     const res = await fetch(`${BASE_URL}/visits`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newVisit) });
@@ -67,6 +72,60 @@ export const api = {
   },
   deleteVisit: async (id: string): Promise<void> => {
     await fetch(`${BASE_URL}/visits/${id}`, { method: 'DELETE' });
+  },
+
+  // --- MEDICAL RECORDS ---
+  addMedicalRecord: async (record: Omit<MedicalRecord, 'id'>): Promise<MedicalRecord> => {
+    const newRecord = { ...record, id: 'mr-' + Date.now() };
+    const res = await fetch(`${BASE_URL}/medicalRecords`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newRecord) });
+    return handleResponse(res);
+  },
+
+  // --- PRESCRIPTIONS ---
+  addPrescription: async (prescription: Omit<Prescription, 'id'>): Promise<Prescription> => {
+    const newPrescription = { ...prescription, id: 'pr-' + Date.now() };
+    const res = await fetch(`${BASE_URL}/prescriptions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newPrescription) });
+    return handleResponse(res);
+  },
+  // PENTING UNTUK APOTEKER: Ambil resep berdasarkan ID Kunjungan
+  getPrescriptionByVisit: async (visitId: string): Promise<Prescription[]> => {
+    const res = await fetch(`${BASE_URL}/prescriptions?visitId=${visitId}`);
+    return handleResponse(res);
+  },
+
+  // --- MEDICINES ---
+  getMedicines: async (): Promise<Medicine[]> => {
+    const res = await fetch(`${BASE_URL}/medicines`);
+    return handleResponse(res);
+  },
+  addMedicine: async (medicine: Omit<Medicine, 'id'>): Promise<Medicine> => {
+    const newMed = { ...medicine, id: 'm-' + Date.now() };
+    const res = await fetch(`${BASE_URL}/medicines`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newMed) });
+    return handleResponse(res);
+  },
+  // PENTING UNTUK APOTEKER: Kurangi Stok
+  updateMedicineStock: async (id: string, newStock: number): Promise<Medicine> => {
+    const res = await fetch(`${BASE_URL}/medicines/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stock: newStock }) });
+    return handleResponse(res);
+  },
+  deleteMedicine: async (id: string): Promise<void> => {
+    await fetch(`${BASE_URL}/medicines/${id}`, { method: 'DELETE' });
+  },
+
+  // --- TRANSACTIONS ---
+  getTransactions: async (): Promise<Transaction[]> => {
+    const res = await fetch(`${BASE_URL}/transactions`);
+    return handleResponse(res);
+  },
+  // PENTING UNTUK APOTEKER: Buat Tagihan Kasir
+  addTransaction: async (transaction: Omit<Transaction, 'id'>): Promise<Transaction> => {
+    const newTx = { ...transaction, id: 'INV-' + Date.now() };
+    const res = await fetch(`${BASE_URL}/transactions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newTx) });
+    return handleResponse(res);
+  },
+  processPayment: async (id: string): Promise<Transaction> => {
+    const res = await fetch(`${BASE_URL}/transactions/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'paid' }) });
+    return handleResponse(res);
   },
 
   // --- DOCTOR SCHEDULES ---
@@ -87,30 +146,6 @@ export const api = {
     await fetch(`${BASE_URL}/doctorSchedules/${id}`, { method: 'DELETE' });
   },
 
-  // --- MEDICINES ---
-  getMedicines: async (): Promise<Medicine[]> => {
-    const res = await fetch(`${BASE_URL}/medicines`);
-    return handleResponse(res);
-  },
-  addMedicine: async (medicine: Omit<Medicine, 'id'>): Promise<Medicine> => {
-    const newMed = { ...medicine, id: 'm-' + Date.now() };
-    const res = await fetch(`${BASE_URL}/medicines`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newMed) });
-    return handleResponse(res);
-  },
-  deleteMedicine: async (id: string): Promise<void> => {
-    await fetch(`${BASE_URL}/medicines/${id}`, { method: 'DELETE' });
-  },
-
-  // --- TRANSACTIONS ---
-  getTransactions: async (): Promise<Transaction[]> => {
-    const res = await fetch(`${BASE_URL}/transactions`);
-    return handleResponse(res);
-  },
-  processPayment: async (id: string): Promise<Transaction> => {
-    const res = await fetch(`${BASE_URL}/transactions/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'paid' }) });
-    return handleResponse(res);
-  },
-
   // --- CLINIC INFO ---
   getClinicInfo: async (): Promise<ClinicInfo> => {
     const res = await fetch(`${BASE_URL}/clinicInfo`);
@@ -119,28 +154,6 @@ export const api = {
   },
   updateClinicInfo: async (data: ClinicInfo): Promise<ClinicInfo> => {
     const res = await fetch(`${BASE_URL}/clinicInfo`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-    return handleResponse(res);
-  },
-
-  // --- MEDICAL RECORDS (SOAP) [BARU] ---
-  addMedicalRecord: async (record: Omit<MedicalRecord, 'id'>): Promise<MedicalRecord> => {
-    const newRecord = { ...record, id: 'mr-' + Date.now() };
-    const res = await fetch(`${BASE_URL}/medicalRecords`, { 
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify(newRecord) 
-    });
-    return handleResponse(res);
-  },
-
-  // --- PRESCRIPTIONS (RESEP) [BARU] ---
-  addPrescription: async (prescription: Omit<Prescription, 'id'>): Promise<Prescription> => {
-    const newPrescription = { ...prescription, id: 'pr-' + Date.now() };
-    const res = await fetch(`${BASE_URL}/prescriptions`, { 
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify(newPrescription) 
-    });
     return handleResponse(res);
   }
 };
