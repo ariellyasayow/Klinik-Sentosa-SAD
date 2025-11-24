@@ -2,7 +2,7 @@ export interface User {
   password: string;
   id: string;
   username: string;
-  role: 'admin' | 'doctor' | 'pharmacist' ;
+  role: 'admin' | 'doctor' | 'pharmacist';
   name: string;
   specialty?: string;
   image?: string;

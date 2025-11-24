@@ -10,7 +10,7 @@ const SettingsPage: React.FC = () => {
   const [clinicInfo, setClinicInfo] = useState<ClinicInfo>({ name: '', address: '', phone: '', email: '' });
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isMedModalOpen, setIsMedModalOpen] = useState(false);
-  const [userForm, setUserForm] = useState({ name: '', username: '', role: 'doctor' as const });
+  const [userForm, setUserForm] = useState({ name: '', username: '', password: '', role: 'doctor' as const });
   const [medForm, setMedForm] = useState({ name: '', price: 0, stock: 0 });
 
   useEffect(() => { loadData(); }, [activeTab]);
@@ -27,7 +27,7 @@ const SettingsPage: React.FC = () => {
     } catch (error) { console.error(error); } finally { setLoading(false); }
   };
 
-  const handleAddUser = async (e: React.FormEvent) => { e.preventDefault(); await api.addUser(userForm); setIsUserModalOpen(false); setUserForm({ name: '', username: '', role: 'doctor' }); loadData(); alert("User ditambahkan!"); };
+  const handleAddUser = async (e: React.FormEvent) => { e.preventDefault(); await api.addUser(userForm); setIsUserModalOpen(false); setUserForm({ name: '', username: '', password: '', role: 'doctor' }); loadData(); alert("User ditambahkan!"); };
   const handleDeleteUser = async (id: string) => { if(confirm("Hapus user?")) { await api.deleteUser(id); loadData(); } };
   const handleAddMedicine = async (e: React.FormEvent) => { e.preventDefault(); await api.addMedicine(medForm); setIsMedModalOpen(false); setMedForm({ name: '', price: 0, stock: 0 }); loadData(); alert("Obat ditambahkan!"); };
   const handleDeleteMedicine = async (id: string) => { if(confirm("Hapus obat?")) { await api.deleteMedicine(id); loadData(); } };
