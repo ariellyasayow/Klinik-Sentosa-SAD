@@ -725,6 +725,37 @@
           }
         ]
       }
+    },
+    {
+      "id": "v-1764040535252",
+      "patientId": "p-1763994032626",
+      "doctorId": "doc4",
+      "date": "2025-11-25",
+      "queueNumber": "A-002",
+      "isEmergency": false,
+      "status": "payment",
+      "patientName": "",
+      "medicalRecord": {
+        "id": "mr-1764040622543",
+        "visitId": "v-1764040535252",
+        "complaints": "btuk",
+        "vitalSigns": "39",
+        "diagnosis": "tipes"
+      },
+      "prescription": {
+        "id": "pr-1764040622543",
+        "visitId": "v-1764040535252",
+        "status": "processed",
+        "items": [
+          {
+            "medicineId": "m2",
+            "medicineName": "Amoxicillin 500mg",
+            "dosage": "3x1",
+            "quantity": 1,
+            "price": 12000
+          }
+        ]
+      }
     }
   ],
   "doctorSchedules": [
@@ -776,7 +807,7 @@
       "id": "m2",
       "name": "Amoxicillin 500mg",
       "price": 12000,
-      "stock": 44
+      "stock": 43
     }
   ],
   "medicalRecords": [
