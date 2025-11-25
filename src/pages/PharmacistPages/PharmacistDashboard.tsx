@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import type { User, Visit, Medicine, Prescription, TransactionItem } from '../../types';
-import logo from '../../assets/logo.png';
+import type { User, Visit, Medicine, Prescription, Patient } from '../../types'; // Pastikan Patient diimport
 
 interface PharmacistDashboardProps {
   user: User;
@@ -9,189 +8,226 @@ interface PharmacistDashboardProps {
 }
 
 const PharmacistDashboard: React.FC<PharmacistDashboardProps> = ({ user, onLogout }) => {
+  // --- STATE ---
   const [queue, setQueue] = useState<Visit[]>([]);
   const [medicines, setMedicines] = useState<Medicine[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]); // State untuk data pasien
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
-  const [prescription, setPrescription] = useState<Prescription | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadData();
+    // Auto refresh setiap 5 detik
     const interval = setInterval(loadData, 5000);
     return () => clearInterval(interval);
   }, []);
 
   const loadData = async () => {
     try {
-      // MANUAL JOIN: Ambil Visits DAN Patients terpisah
-      const [visits, meds, patients] = await Promise.all([
+      // PERBAIKAN: Ambil Visits, Medicines, DAN Patients sekaligus
+      const [visitsData, medsData, patientsData] = await Promise.all([
         api.getVisits(),
         api.getMedicines(),
-        api.getPatients() // <-- Fetch Patients
+        api.getPatients() // <-- Fetch Data Pasien
       ]);
       
-      // Gabungkan data pasien ke visit secara manual (Anti-Fail)
-      const visitsWithPatient = visits.map(visit => {
-         // Jika visit.patient sudah ada dari server, pakai itu. Jika tidak, cari manual di array patients
-         const foundPatient = visit.patient || patients.find(p => p.id === visit.patientId);
-         return { ...visit, patient: foundPatient };
-      });
+      setMedicines(medsData);
+      setPatients(patientsData); // Simpan data pasien
 
-      const pharmacyQueue = visitsWithPatient.filter(v => v.status === 'pharmacy');
+      // Filter visit yang statusnya 'pharmacy' (dikirim dokter)
+      // dan pastikan resepnya belum diproses (status pending)
+      const pharmacyQueue = visitsData.filter(v => 
+          v.status === 'pharmacy' && 
+          v.prescription?.status === 'pending'
+      );
+      
       setQueue(pharmacyQueue);
-      setMedicines(meds);
-    } catch (error) { console.error("Gagal load data farmasi", error); }
+    } catch (err) {
+      console.error("Error loading pharmacy data", err);
+    }
   };
 
-  const handleSelectPatient = async (visit: Visit) => {
-    setSelectedVisit(visit);
-    setLoading(true);
-    try {
-      const prescs = await api.getPrescriptionByVisit(visit.id);
-      if (prescs.length > 0) {
-        setPrescription(prescs[prescs.length - 1]); 
-      } else {
-        setPrescription(null);
-      }
-    } catch (error) { console.error(error); } finally { setLoading(false); }
+  // --- HELPER: FUNGSI UNTUK MENDAPATKAN NAMA PASIEN ---
+  const getPatientName = (visit: Visit) => {
+    // 1. Cari di daftar patients berdasarkan ID
+    const found = patients.find(p => p.id === visit.patientId);
+    if (found) return found.name;
+
+    // 2. Cek properti nested atau flat
+    if (visit.patient?.name) return visit.patient.name;
+    if (visit.patientName) return visit.patientName;
+
+    // 3. Fallback
+    return `Pasien (${visit.patientId})`;
   };
 
-  const calculateAge = (birthDate: string) => {
-    if (!birthDate || birthDate === '1900-01-01') return '-';
-    const today = new Date();
-    const dob = new Date(birthDate);
-    let age = today.getFullYear() - dob.getFullYear();
-    if (today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())) age--;
-    return age;
+  const calculateTotalPrice = (items: any[]) => {
+    return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   };
 
   const handleProcess = async () => {
-    if (!selectedVisit || !prescription) return;
-    if (!confirm("Konfirmasi obat disiapkan? Stok akan dikurangi & tagihan dibuat.")) return;
-
+    if (!selectedVisit || !selectedVisit.prescription) return;
     setLoading(true);
+
     try {
-      // 1. Kurangi Stok
-      for (const item of prescription.items) {
-        const currentMed = medicines.find(m => m.id === item.medicineId);
-        if (currentMed) {
-          const newStock = currentMed.stock - item.quantity;
-          if (newStock < 0) {
-             alert(`Stok ${currentMed.name} tidak cukup!`);
-             setLoading(false); return;
-          }
-          await api.updateMedicineStock(currentMed.id, newStock);
+        // 1. Kurangi Stok Obat di Database
+        for (const item of selectedVisit.prescription.items) {
+           const med = medicines.find(m => m.id === item.medicineId);
+           if (med) {
+             const newStock = med.stock - item.quantity;
+             await api.updateMedicine(med.id, { stock: newStock });
+           }
         }
-      }
 
-      // 2. Buat Transaksi (PASTIKAN NAMA PASIEN TERISI)
-      const patientNameFinal = selectedVisit.patient?.name || 'Tanpa Nama (Error)';
-      
-      let totalMedicinePrice = 0;
-      const txItems: TransactionItem[] = prescription.items.map(item => {
-         const price = item.price * item.quantity;
-         totalMedicinePrice += price;
-         return {
-            id: item.medicineId, name: item.medicineName, quantity: item.quantity, price: price, type: 'medicine'
-         };
-      });
+        // 2. Update Status Resep menjadi 'processed'
+        // PENTING: Kita update objek prescription di dalam visit
+        const updatedPrescription = {
+            ...selectedVisit.prescription,
+            status: 'processed' as const
+        };
 
-      const doctorFee = 150000;
-      txItems.push({ id: 'svc-doc', name: 'Jasa Konsultasi Dokter', quantity: 1, price: doctorFee, type: 'service' });
+        // 3. Update Visit: Status -> 'payment' (Kirim ke Kasir)
+        await api.updateVisit(selectedVisit.id, {
+            status: 'payment', 
+            prescription: updatedPrescription
+        } as any);
 
-      await api.addTransaction({
-         visitId: selectedVisit.id,
-         patientName: patientNameFinal, // <--- NAMA PASIEN DISINI
-         description: `Farmasi & Poli (No. ${selectedVisit.queueNumber})`,
-         amount: totalMedicinePrice + doctorFee,
-         status: 'pending',
-         date: new Date().toISOString().split('T')[0],
-         items: txItems
-      });
+        // 4. (Opsional) Langsung buat transaksi pending agar muncul di kasir
+        // Langkah ini sudah ditangani logika kasir, tapi biar aman kita biarkan updateVisit saja.
 
-      await api.updateVisitStatus(selectedVisit.id, 'cashier');
-
-      alert("Selesai! Pasien diarahkan ke Kasir.");
-      setSelectedVisit(null); setPrescription(null); loadData();
-
-    } catch (error) { alert("Gagal memproses."); } finally { setLoading(false); }
+        alert('Resep selesai disiapkan. Data dikirim ke Kasir.');
+        setSelectedVisit(null);
+        loadData(); // Refresh
+    } catch (error) {
+        console.error("Gagal memproses resep", error);
+        alert("Terjadi kesalahan sistem saat memproses resep.");
+    } finally {
+        setLoading(false);
+    }
   };
 
   return (
-    <div className="flex h-screen w-full bg-green-50 font-sans text-slate-800 overflow-hidden">
-      <aside className="w-80 bg-white border-r border-green-200 flex flex-col shadow-sm z-10">
-        <div className="h-20 border-b border-green-100 flex items-center px-6 gap-3">
-           <img src={logo} alt="Logo" className="h-8 w-auto" />
-           <div><h1 className="font-bold text-lg text-green-800 leading-tight">Farmasi</h1><p className="text-xs text-green-600">Klinik Sentosa</p></div>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-green-50/30">
-           <div className="flex justify-between items-center mb-2 px-1">
-              <h3 className="font-bold text-slate-600 text-xs uppercase">Resep Masuk</h3>
-              <span className="bg-green-200 text-green-800 text-xs font-bold px-2 py-0.5 rounded-full">{queue.length}</span>
-           </div>
-           {queue.length === 0 ? <div className="flex flex-col items-center justify-center h-40 text-slate-400 italic text-sm border-2 border-dashed border-green-200 rounded-xl"><span className="material-symbols-outlined mb-2 opacity-50">local_pharmacy</span>Tidak ada resep.</div> : queue.map(visit => (
-              <div key={visit.id} onClick={() => handleSelectPatient(visit)} className={`relative p-4 rounded-xl border cursor-pointer transition-all group ${selectedVisit?.id === visit.id ? 'bg-green-600 text-white shadow-lg ring-2 ring-green-300 border-transparent' : 'bg-white border-green-100 hover:border-green-400 hover:shadow-sm'}`}>
-                 <div className="flex justify-between items-start">
-                    <div><span className={`text-[10px] font-bold px-1.5 py-0.5 rounded mb-1 inline-block ${selectedVisit?.id === visit.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>{visit.queueNumber}</span><h4 className="font-bold text-base">{visit.patient?.name || 'Loading...'}</h4><p className={`text-xs mt-1 ${selectedVisit?.id === visit.id ? 'text-green-100' : 'text-slate-500'}`}>Menunggu Obat</p></div>
-                    <span className="material-symbols-outlined text-lg">chevron_right</span>
-                 </div>
-              </div>
-           ))}
-        </div>
-        <div className="p-4 border-t border-green-100 bg-white"><button onClick={onLogout} className="w-full py-2 text-red-500 font-bold hover:bg-red-50 rounded-lg flex items-center justify-center gap-2 text-sm"><span className="material-symbols-outlined text-lg">logout</span> Keluar</button></div>
-      </aside>
-
-      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-white">
-         <header className="h-20 border-b border-slate-100 flex items-center justify-between px-8 bg-white/80 backdrop-blur-sm z-10">
-            <div><h1 className="text-xl font-bold text-slate-800">Halo, {user.name}</h1><p className="text-xs text-slate-500 font-medium">Apoteker Jaga</p></div>
-            <div className="h-10 w-10 bg-green-100 text-green-700 rounded-full flex items-center justify-center font-bold border-2 border-white shadow-sm">A</div>
-         </header>
-
-         <div className="flex-1 p-8 overflow-y-auto bg-slate-50">
-            {!selectedVisit ? (
-               <div className="flex flex-col items-center justify-center h-full text-center text-slate-400 animate-in zoom-in-95 duration-300">
-                  <div className="bg-white p-8 rounded-full shadow-sm mb-6 border border-green-50"><span className="material-symbols-outlined text-7xl text-green-400">medication_liquid</span></div>
-                  <h3 className="text-2xl font-bold text-slate-700 mb-2">Siap Melayani Resep</h3>
-                  <p className="text-sm max-w-md">Pilih pasien dari antrian kiri.</p>
-               </div>
+    <div className="min-h-screen bg-gray-50 flex font-sans text-slate-800">
+      {/* Sidebar List Pasien */}
+      <div className="w-96 bg-white border-r flex flex-col h-screen fixed left-0 top-0 z-10">
+         <div className="p-6 border-b bg-[#004346] text-white">
+            <h1 className="text-xl font-bold flex items-center gap-2">
+               <span className="material-symbols-outlined">medication</span>
+               Farmasi
+            </h1>
+            <p className="text-blue-100 text-sm mt-1">Menunggu Penyerahan Obat</p>
+         </div>
+         
+         <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {queue.length === 0 ? (
+                <div className="text-center text-gray-400 mt-10">
+                    <p>Tidak ada resep masuk</p>
+                </div>
             ) : (
-               <div className="flex flex-col lg:flex-row gap-6 h-full">
-                  <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col animate-in slide-in-from-right-4 duration-300">
-                     <div className="p-6 border-b border-slate-100 bg-slate-50/30 flex justify-between items-start">
-                        <div><p className="text-xs font-bold text-green-600 uppercase tracking-wider mb-1">Resep Digital</p><h2 className="text-2xl font-bold text-slate-800">{selectedVisit.patient?.name}</h2><div className="flex gap-4 text-sm text-slate-500 mt-2"><span className="flex items-center gap-1"><span className="material-symbols-outlined text-base">badge</span> {selectedVisit.patient?.nik || '-'}</span></div></div>
-                        <div className="text-right"><p className="text-xs text-slate-400 uppercase font-bold">Antrian</p><p className="text-3xl font-black text-slate-700">{selectedVisit.queueNumber}</p></div>
-                     </div>
-                     <div className="flex-1 p-6 overflow-y-auto">
-                        {loading ? <div className="text-center py-10">Memuat...</div> : !prescription ? <div className="text-center py-10 text-red-500">Resep Kosong</div> : (
-                           <div className="space-y-4">
-                              <div className="flex items-center justify-between mb-2"><h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Daftar Obat ({prescription.items.length})</h3><span className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">ID: {prescription.id}</span></div>
-                              {prescription.items.map((item, idx) => {
-                                 const realStock = medicines.find(m => m.id === item.medicineId)?.stock || 0;
-                                 const isStockLow = realStock < item.quantity;
-                                 return (
-                                    <div key={idx} className="flex justify-between items-start p-4 rounded-xl border border-slate-100 hover:border-green-300 transition-colors bg-white shadow-sm group">
-                                       <div className="flex gap-4"><div className="h-12 w-12 rounded-xl bg-green-50 text-green-600 flex items-center justify-center font-bold border border-green-100">{idx + 1}</div><div><p className="font-bold text-slate-800 text-lg">{item.medicineName}</p><div className="flex gap-2 text-xs mt-1"><span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100">Aturan: {item.dosage}</span>{isStockLow && <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded border border-red-200 font-bold animate-pulse">STOK KURANG ({realStock})</span>}</div></div></div><div className="text-right"><p className="text-2xl font-bold text-slate-800">{item.quantity}</p><p className="text-xs text-slate-400 font-medium uppercase">Unit</p></div>
-                                    </div>
-                                 );
-                              })}
-                           </div>
-                        )}
-                     </div>
-                  </div>
-                  <div className="w-80 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col h-fit sticky top-0">
-                     <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><span className="material-symbols-outlined text-blue-600">person_search</span> Data Pasien</h3>
-                     <div className="space-y-4 flex-1 mb-6 text-sm">
-                        <div className="pb-3 border-b border-slate-100"><p className="text-slate-400 text-xs font-bold uppercase mb-1">Nama Lengkap</p><p className="font-semibold text-slate-800 text-base">{selectedVisit.patient?.name}</p></div>
-                        <div className="pb-3 border-b border-slate-100"><p className="text-slate-400 text-xs font-bold uppercase mb-1">NIK</p><p className="font-medium text-slate-700">{selectedVisit.patient?.nik || '-'}</p></div>
-                        <div className="pb-3 border-b border-slate-100"><p className="text-slate-400 text-xs font-bold uppercase mb-1">Usia / Tgl Lahir</p><p className="font-medium text-slate-700">{calculateAge(selectedVisit.patient?.birthDate || '')} Thn ({selectedVisit.patient?.birthDate})</p></div>
-                        <div><p className="text-slate-400 text-xs font-bold uppercase mb-1">Tipe Pasien</p><span className={`px-2 py-1 rounded text-xs font-bold ${selectedVisit.patient?.type === 'BPJS' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>{selectedVisit.patient?.type || 'Umum'}</span></div>
-                     </div>
-                     <div className="pt-4 border-t border-slate-100"><button onClick={handleProcess} disabled={!prescription || loading} className="w-full py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-lg transition-all disabled:opacity-70 flex items-center justify-center gap-2">{loading ? <span className="material-symbols-outlined animate-spin">refresh</span> : <><span className="material-symbols-outlined">check_circle</span> Selesai & Kirim</>}</button><p className="text-xs text-center text-slate-400 mt-3">Stok berkurang & tagihan terkirim.</p></div>
-                  </div>
-               </div>
+                queue.map(visit => (
+                    <div 
+                      key={visit.id}
+                      onClick={() => setSelectedVisit(visit)}
+                      className={`p-4 rounded-xl border cursor-pointer transition-all hover:shadow-md ${selectedVisit?.id === visit.id ? 'border-[#004346] bg-green-50 ring-1 ring-[#004346]' : 'border-gray-100 bg-white'}`}
+                    >
+                       <div className="flex justify-between items-start mb-2">
+                          {/* GUNAKAN HELPER NAME DISINI */}
+                          <h3 className="font-bold text-slate-700">{getPatientName(visit)}</h3>
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-bold">{visit.status}</span>
+                       </div>
+                       <p className="text-xs text-slate-500 mb-2">Dari: Dr. {visit.doctorName || 'Umum'}</p>
+                       <div className="text-xs text-slate-400 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[14px]">prescriptions</span>
+                          {visit.prescription?.items.length || 0} Item Obat
+                       </div>
+                    </div>
+                ))
             )}
          </div>
-      </main>
+         
+         <div className="p-4 border-t bg-gray-50">
+            <button onClick={onLogout} className="w-full py-2 text-red-600 font-bold text-sm hover:bg-red-50 rounded transition-colors">Keluar</button>
+         </div>
+      </div>
+
+      {/* Main Detail View */}
+      <div className="ml-96 flex-1 p-8">
+         {selectedVisit ? (
+            <div className="max-w-3xl mx-auto">
+               <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="p-6 border-b bg-gray-50 flex justify-between items-center">
+                     <div>
+                        <h2 className="text-2xl font-bold text-[#004346]">Detail Resep</h2>
+                        <p className="text-slate-500">Ref: {selectedVisit.prescription?.id || '-'}</p>
+                     </div>
+                     <div className="text-right">
+                        {/* GUNAKAN HELPER NAME DISINI JUGA */}
+                        <p className="text-lg font-bold text-slate-700">{getPatientName(selectedVisit)}</p>
+                        <p className="text-xs text-slate-500">{selectedVisit.patientId}</p>
+                     </div>
+                  </div>
+
+                  <div className="p-6">
+                     <h3 className="font-bold text-sm text-slate-400 uppercase tracking-wider mb-4">Daftar Obat Diminta</h3>
+                     
+                     <div className="space-y-3">
+                        {selectedVisit.prescription?.items && selectedVisit.prescription.items.length > 0 ? (
+                            selectedVisit.prescription.items.map((item: any, idx: number) => (
+                                <div key={idx} className="flex items-center justify-between p-4 border border-gray-100 rounded-xl bg-white hover:border-blue-200 transition-colors">
+                                   <div className="flex items-center gap-4">
+                                      <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold">
+                                         {idx + 1}
+                                      </div>
+                                      <div>
+                                         <p className="font-bold text-slate-700 text-lg">{item.medicineName}</p>
+                                         <p className="text-sm text-slate-500 bg-gray-100 inline-block px-2 py-0.5 rounded mt-1">
+                                            {item.dosage}
+                                         </p>
+                                      </div>
+                                   </div>
+                                   <div className="text-right">
+                                      <p className="font-bold text-slate-700 text-lg">x {item.quantity}</p>
+                                      <p className="text-xs text-slate-400">@{item.price}</p>
+                                   </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="p-4 bg-red-50 text-red-600 rounded-lg text-center">
+                                Data resep kosong atau rusak.
+                            </div>
+                        )}
+                     </div>
+
+                     <div className="mt-8 pt-6 border-t border-gray-100 flex justify-between items-center">
+                        <div>
+                            <p className="text-sm text-slate-500">Total Estimasi Harga</p>
+                            <p className="text-2xl font-bold text-[#004346]">
+                                Rp {calculateTotalPrice(selectedVisit.prescription?.items || []).toLocaleString('id-ID')}
+                            </p>
+                        </div>
+                        <button 
+                           onClick={handleProcess} 
+                           disabled={loading}
+                           className="px-8 py-3 bg-[#004346] hover:bg-[#003336] text-white rounded-xl font-bold shadow-lg shadow-teal-900/20 transition-all flex items-center gap-2 disabled:opacity-70"
+                        >
+                           {loading ? 'Memproses...' : (
+                               <>
+                                 <span className="material-symbols-outlined">check_circle</span>
+                                 Konfirmasi & Kirim ke Kasir
+                               </>
+                           )}
+                        </button>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         ) : (
+            <div className="h-full flex flex-col items-center justify-center text-gray-300">
+               <span className="material-symbols-outlined text-8xl mb-4 opacity-20">prescriptions</span>
+               <p className="text-xl font-medium text-gray-400">Pilih resep untuk diproses</p>
+            </div>
+         )}
+      </div>
     </div>
   );
 };

@@ -1,3 +1,4 @@
+// src/services/api.ts
 import type { Patient, Visit, MedicalRecord, Prescription, User, Medicine, DoctorSchedule, Transaction, ClinicInfo } from '../../types';
 
 const BASE_URL = 'http://localhost:3000';
@@ -54,7 +55,14 @@ export const api = {
   // --- VISITS ---
   getVisits: async (): Promise<Visit[]> => {
     const res = await fetch(`${BASE_URL}/visits?_expand=patient`);
-    return handleResponse(res);
+    const data = await handleResponse(res);
+    
+    // Mapping agar patientName langsung tersedia di UI
+    return data.map((v: any) => ({
+        ...v,
+        patientName: v.patient?.name || 'Tanpa Nama',
+        doctorName: v.doctor?.name
+    }));
   },
   getDoctorQueue: async (doctorId: string): Promise<Visit[]> => {
     const res = await fetch(`${BASE_URL}/visits?doctorId=${doctorId}&_expand=patient`);
@@ -68,6 +76,14 @@ export const api = {
   },
   updateVisitStatus: async (id: string, status: Visit['status']): Promise<Visit> => {
     const res = await fetch(`${BASE_URL}/visits/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+    return handleResponse(res);
+  },
+  updateVisit: async (id: string, data: Partial<Visit>): Promise<Visit> => {
+    const res = await fetch(`${BASE_URL}/visits/${id}`, { 
+        method: 'PATCH', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify(data) 
+    });
     return handleResponse(res);
   },
   deleteVisit: async (id: string): Promise<void> => {
@@ -87,7 +103,6 @@ export const api = {
     const res = await fetch(`${BASE_URL}/prescriptions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newPrescription) });
     return handleResponse(res);
   },
-  // PENTING UNTUK APOTEKER: Ambil resep berdasarkan ID Kunjungan
   getPrescriptionByVisit: async (visitId: string): Promise<Prescription[]> => {
     const res = await fetch(`${BASE_URL}/prescriptions?visitId=${visitId}`);
     return handleResponse(res);
@@ -103,7 +118,15 @@ export const api = {
     const res = await fetch(`${BASE_URL}/medicines`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newMed) });
     return handleResponse(res);
   },
-  // PENTING UNTUK APOTEKER: Kurangi Stok
+  // PERBAIKAN: Menambahkan fungsi updateMedicine umum
+  updateMedicine: async (id: string, data: Partial<Medicine>): Promise<Medicine> => {
+    const res = await fetch(`${BASE_URL}/medicines/${id}`, { 
+        method: 'PATCH', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify(data) 
+    });
+    return handleResponse(res);
+  },
   updateMedicineStock: async (id: string, newStock: number): Promise<Medicine> => {
     const res = await fetch(`${BASE_URL}/medicines/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stock: newStock }) });
     return handleResponse(res);
@@ -117,7 +140,6 @@ export const api = {
     const res = await fetch(`${BASE_URL}/transactions`);
     return handleResponse(res);
   },
-  // PENTING UNTUK APOTEKER: Buat Tagihan Kasir
   addTransaction: async (transaction: Omit<Transaction, 'id'>): Promise<Transaction> => {
     const newTx = { ...transaction, id: 'INV-' + Date.now() };
     const res = await fetch(`${BASE_URL}/transactions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newTx) });

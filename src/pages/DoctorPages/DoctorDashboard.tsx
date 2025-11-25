@@ -1,6 +1,7 @@
+// src/pages/DoctorPages/DoctorDashboard.tsx
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import type { Visit, User, Medicine } from '../../types';
+import type { Visit, User, Medicine, MedicalRecord, Prescription, Patient } from '../../types';
 
 interface DoctorDashboardProps {
   user: User;
@@ -8,352 +9,430 @@ interface DoctorDashboardProps {
 }
 
 const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, onLogout }) => {
-  // State Data
+  // --- STATE DATA UTAMA ---
   const [visits, setVisits] = useState<Visit[]>([]);
   const [medicines, setMedicines] = useState<Medicine[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]); // TAMBAHAN: Simpan data semua pasien
   const [activeVisit, setActiveVisit] = useState<Visit | null>(null);
-  
-  // State Form SOAP
-  const [soap, setSoap] = useState({ s: '', o: '', a: '' });
-  
-  // State Resep Obat
-  const [selectedMedId, setSelectedMedId] = useState('');
-  const [dosage, setDosage] = useState('');
-  const [quantity, setQuantity] = useState<number>(1);
-  const [cart, setCart] = useState<{ med: Medicine; dosage: string; qty: number }[]>([]);
-
-  // Loading State
   const [loading, setLoading] = useState(false);
 
-  // 1. Load Antrian & Obat saat pertama kali buka
+  // --- STATE HISTORY PASIEN ---
+  const [historyVisits, setHistoryVisits] = useState<Visit[]>([]);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+
+  // --- STATE FORM SOAP ---
+  const [complaints, setComplaints] = useState(''); // S
+  const [vitalSigns, setVitalSigns] = useState(''); // O
+  const [diagnosis, setDiagnosis] = useState('');   // A
+
+  // --- STATE RESEP OBAT ---
+  const [cart, setCart] = useState<{ med: Medicine; dosage: string; qty: number }[]>([]);
+  const [selectedMedId, setSelectedMedId] = useState('');
+  const [dosage, setDosage] = useState('');
+  const [quantity, setQuantity] = useState(1);
+
+  // --- LOAD DATA AWAL ---
   useEffect(() => {
-    loadQueue();
-    loadMedicines();
+    loadData();
   }, []);
 
-  const loadQueue = async () => {
+  const loadData = async () => {
     try {
-      const [allVisits, allPatients] = await Promise.all([
+      // Kita load Visits, Medicines, DAN Patients sekaligus
+      const [visitsData, medsData, patientsData] = await Promise.all([
         api.getVisits(),
-        api.getPatients()
+        api.getMedicines(),
+        api.getPatients() // Fetch manual agar nama pasti ada
       ]);
 
-      // Filter: Hanya kunjungan untuk dokter ini & status belum selesai
-      const myVisits = allVisits.filter(v => 
-        v.doctorId === user.id && 
-        (v.status === 'waiting' || v.status === 'examining')
-      );
-
-      // Join data pasien
-      const joinedVisits = myVisits.map(v => ({
-        ...v,
-        patient: allPatients.find(p => p.id === v.patientId)
-      }));
-
-      setVisits(joinedVisits);
+      setVisits(visitsData);
+      setMedicines(medsData);
+      setPatients(patientsData);
     } catch (error) {
-      console.error("Gagal memuat antrian", error);
+      console.error("Gagal memuat data:", error);
     }
   };
 
-  const loadMedicines = async () => {
-    const data = await api.getMedicines();
-    setMedicines(data);
+  // --- HELPER: MENDAPATKAN NAMA PASIEN ---
+  // Fungsi ini mencari nama pasien dari list patients berdasarkan ID
+  const getPatientName = (visit: Visit) => {
+    // 1. Coba ambil dari properti patientName (jika ada dari API)
+    if (visit.patientName && visit.patientName !== 'Tanpa Nama') return visit.patientName;
+    // 2. Coba ambil dari object nested patient (jika expand berhasil)
+    if (visit.patient?.name) return visit.patient.name;
+    // 3. CARA PALING AMPUH: Cari manual di state patients
+    const found = patients.find(p => p.id === visit.patientId);
+    return found ? found.name : 'Nama Tidak Ditemukan';
   };
 
-  // 2. Handle Klik Pasien (Mulai Pemeriksaan)
-  const handleSelectPatient = async (visit: Visit) => {
-    if (activeVisit && activeVisit.id !== visit.id) {
-        if(!confirm("Pindah pasien? Data SOAP yang belum disimpan akan hilang.")) return;
-    }
+  // --- LOGIKA HISTORY ---
+  const handleOpenHistory = () => {
+    if (!activeVisit) return;
     
-    setLoading(true);
-    try {
-      // Ubah status jadi examining jika masih waiting
-      if (visit.status === 'waiting') {
-        await api.updateVisitStatus(visit.id, 'examining');
-        visit.status = 'examining'; // Optimistic update
-      }
-      setActiveVisit(visit);
-      
-      // Reset Form
-      setSoap({ s: '', o: '', a: '' });
-      setCart([]);
-      loadQueue(); // Refresh list agar status terupdate di sidebar
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
+    // Filter visit milik pasien ini yang sudah selesai/di farmasi/kasir
+    const history = visits.filter(v => 
+      v.patientId === activeVisit.patientId && 
+      v.id !== activeVisit.id &&
+      (v.status === 'done' || v.status === 'pharmacy' || v.status === 'cashier' || v.status === 'payment')
+    );
+    
+    // Urutkan dari yang terbaru
+    history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    setHistoryVisits(history);
+    setShowHistoryModal(true);
   };
 
-  // 3. Tambah Obat ke Resep Sementara
-  const handleAddMedicine = () => {
-    if (!selectedMedId || !dosage || quantity < 1) return;
-    
+  // --- LOGIKA TAMBAH OBAT KE CART ---
+  const handleAddMedicine = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedMedId || !dosage) return;
+
     const med = medicines.find(m => m.id === selectedMedId);
     if (med) {
       setCart([...cart, { med, dosage, qty: quantity }]);
-      // Reset input obat
+      // Reset form kecil
       setSelectedMedId('');
       setDosage('');
       setQuantity(1);
     }
   };
 
-  const handleRemoveMedicine = (index: number) => {
+  const handleRemoveItem = (index: number) => {
     setCart(cart.filter((_, i) => i !== index));
   };
 
-  // 4. Submit Pemeriksaan (Selesai)
+  // --- SIMPAN PEMERIKSAAN ---
   const handleSubmit = async () => {
     if (!activeVisit) return;
-    if (!soap.s || !soap.o || !soap.a) {
-        alert("Mohon lengkapi data SOAP (Keluhan, Fisik, Diagnosa).");
-        return;
-    }
-    
-    if(!confirm("Selesaikan pemeriksaan dan kirim resep ke apotek?")) return;
-
     setLoading(true);
-    try {
-      // A. Simpan Rekam Medis (SOAP)
-      await api.addMedicalRecord({
-        visitId: activeVisit.id,
-        complaints: soap.s,
-        vitalSigns: soap.o, // Mapping 'O' ke vitalSigns atau buat field baru di types
-        diagnosis: soap.a
-      });
 
-      // B. Simpan Resep (Jika ada obat)
+    try {
+      // 1. Siapkan Data Medical Record
+      const newMedicalRecord: MedicalRecord = {
+        id: `mr-${Date.now()}`,
+        visitId: activeVisit.id,
+        complaints: complaints,
+        vitalSigns: vitalSigns,
+        diagnosis: diagnosis
+      };
+
+      // 2. Siapkan Data Resep
+      let newPrescription: Prescription | undefined = undefined;
       if (cart.length > 0) {
-        await api.addPrescription({
+        newPrescription = {
+          id: `pr-${Date.now()}`,
           visitId: activeVisit.id,
-          status: 'pending', // Menunggu diproses apotek
+          status: 'pending',
           items: cart.map(item => ({
-             medicineId: item.med.id,
-             medicineName: item.med.name,
-             price: item.med.price,
-             dosage: item.dosage,
-             quantity: item.qty
+            medicineId: item.med.id,
+            medicineName: item.med.name,
+            dosage: item.dosage,
+            quantity: item.qty,
+            price: item.med.price
           }))
-        });
+        };
       }
 
-      // C. Update Status Kunjungan -> Pharmacy
-      await api.updateVisitStatus(activeVisit.id, 'pharmacy');
+      // 3. Tentukan Status Berikutnya
+      const nextStatus = cart.length > 0 ? 'pharmacy' : 'payment';
 
-      alert("Pemeriksaan Selesai!");
+      // 4. Update ke Server
+      const payload = {
+        status: nextStatus as any,
+        medicalRecord: newMedicalRecord,
+        prescription: newPrescription
+      };
+
+      await api.updateVisit(activeVisit.id, payload);
+
+      alert(`Pemeriksaan selesai. Pasien diarahkan ke ${nextStatus === 'pharmacy' ? 'Farmasi' : 'Kasir'}.`);
+      
+      // Reset & Refresh
       setActiveVisit(null);
-      loadQueue(); // Refresh antrian (pasien tadi akan hilang dari list)
-
+      setComplaints(''); setVitalSigns(''); setDiagnosis(''); setCart([]);
+      loadData(); // Refresh data
     } catch (error) {
-      alert("Gagal menyimpan data.");
       console.error(error);
+      alert('Gagal menyimpan data.');
     } finally {
       setLoading(false);
     }
   };
 
+  // Filter Antrian untuk Dokter Ini
+  const myQueue = visits.filter(v => 
+    (v.status === 'examining' || v.status === 'waiting') && 
+    (v.doctorId === user.id || !v.doctorId)
+  );
+
   return (
-    <div className="flex h-screen bg-gray-100 font-display overflow-hidden">
-      
-      {/* SIDEBAR: DAFTAR ANTRIAN */}
-      <aside className="w-80 bg-white border-r border-gray-200 flex flex-col z-10 shadow-lg">
-        <div className="p-6 border-b border-gray-100 bg-slate-50">
-          <h1 className="text-xl font-bold text-[#004346]">Poli Dokter</h1>
-          <p className="text-sm text-gray-500">{user.name}</p>
-          <p className="text-xs text-blue-600 font-semibold mt-1">{user.specialty}</p>
+    <div className="flex h-screen bg-gray-50 font-sans">
+      {/* Sidebar Antrian */}
+      <div className="w-80 bg-white border-r flex flex-col fixed inset-y-0 left-0 z-10">
+        <div className="p-5 border-b bg-[#004346] text-white">
+          <h2 className="font-bold text-lg">Dr. {user.name}</h2>
+          <p className="text-xs opacity-80">{user.specialty || 'Dokter Umum'}</p>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          <h2 className="text-xs font-bold text-gray-400 uppercase mb-2">Antrian Pasien</h2>
-          {visits.length === 0 ? (
-            <div className="text-center py-10 text-gray-400 italic text-sm">Tidak ada antrian.</div>
-          ) : (
-            visits.map(visit => (
-              <div 
-                key={visit.id}
-                onClick={() => handleSelectPatient(visit)}
-                className={`p-4 rounded-xl cursor-pointer transition-all border ${
-                  activeVisit?.id === visit.id 
-                    ? 'bg-blue-600 text-white shadow-md border-blue-600' 
-                    : 'bg-white hover:bg-blue-50 border-gray-100 text-gray-700'
-                }`}
-              >
-                <div className="flex justify-between items-start mb-1">
-                   <span className={`font-bold text-lg ${activeVisit?.id === visit.id ? 'text-white' : 'text-[#004346]'}`}>{visit.queueNumber}</span>
-                   {visit.status === 'examining' && <span className="text-[10px] bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold animate-pulse">Diperiksa</span>}
-                </div>
-                <p className="font-bold text-sm truncate">{visit.patient?.name}</p>
-                <p className={`text-xs ${activeVisit?.id === visit.id ? 'text-blue-100' : 'text-gray-400'}`}>{visit.patient?.type}</p>
-              </div>
-            ))
-          )}
+        <div className="flex-1 overflow-y-auto p-3 space-y-2">
+           {myQueue.length === 0 && (
+             <p className="text-center text-gray-400 text-sm mt-10">Tidak ada antrian.</p>
+           )}
+           {myQueue.map(visit => (
+             <div 
+               key={visit.id} 
+               onClick={() => {
+                 setActiveVisit(visit);
+                 setComplaints(''); setVitalSigns(''); setDiagnosis(''); setCart([]);
+               }}
+               className={`p-4 rounded-xl cursor-pointer border transition-all ${activeVisit?.id === visit.id ? 'bg-teal-50 border-teal-500 ring-1 ring-teal-500' : 'bg-white border-gray-100 hover:border-teal-200'}`}
+             >
+               {/* Gunakan Helper Function agar nama pasti muncul */}
+               <h3 className="font-bold text-gray-800">{getPatientName(visit)}</h3>
+               <div className="flex justify-between mt-2 text-xs text-gray-500">
+                 <span>No. Antrian: {visit.queueNumber}</span>
+                 <span className={`px-2 py-0.5 rounded ${visit.isEmergency ? 'bg-red-100 text-red-600' : 'bg-gray-100'}`}>
+                   {visit.isEmergency ? 'Urgent' : 'Reguler'}
+                 </span>
+               </div>
+             </div>
+           ))}
         </div>
-        <div className="p-4 border-t border-gray-200">
-           <button onClick={onLogout} className="w-full py-2 text-sm text-red-600 font-bold hover:bg-red-50 rounded-lg">Logout</button>
+        
+        <div className="p-4 border-t">
+          <button onClick={onLogout} className="w-full py-2 text-red-600 font-bold hover:bg-red-50 rounded-lg">Keluar</button>
         </div>
-      </aside>
+      </div>
 
-      {/* MAIN CONTENT: FORM PEMERIKSAAN */}
-      <main className="flex-1 overflow-y-auto bg-[#F0F4F8] p-4 md:p-8">
-        {!activeVisit ? (
-          <div className="h-full flex flex-col items-center justify-center text-gray-400">
-            <span className="material-symbols-outlined text-6xl mb-4 text-gray-300">medical_services</span>
-            <p className="text-lg font-medium">Pilih pasien dari antrian untuk memulai pemeriksaan.</p>
+      {/* Main Content Area */}
+      <div className="ml-80 flex-1 p-8 pb-24 overflow-y-auto">
+        {activeVisit ? (
+          <div className="max-w-4xl mx-auto space-y-6">
+            
+            {/* --- HEADER VISIT (PERBAIKAN UTAMA DISINI) --- */}
+            <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-800 mb-1">
+                  {getPatientName(activeVisit)}
+                </h1>
+                <div className="flex items-center gap-3 text-sm text-gray-500">
+                  <span className="bg-gray-100 px-2 py-1 rounded">No. RM: {activeVisit.patientId}</span>
+                  <span>|</span>
+                  <span>Tgl: {activeVisit.date}</span>
+                </div>
+              </div>
+              <button 
+                onClick={handleOpenHistory}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg font-bold hover:bg-blue-100 transition-colors"
+              >
+                <span className="material-symbols-outlined text-lg">history</span> Riwayat Medis
+              </button>
+            </div>
+            {/* --------------------------------------------- */}
+
+            {/* Form SOAP */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+              <h3 className="font-bold text-gray-700 border-b pb-2">Catatan Medis (SOAP)</h3>
+              <div className="grid gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-600 mb-1">Keluhan (Subjective)</label>
+                  <textarea 
+                    rows={3}
+                    className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none transition-shadow"
+                    value={complaints}
+                    onChange={e => setComplaints(e.target.value)}
+                    placeholder="Contoh: Demam sejak 3 hari lalu, pusing..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-600 mb-1">Pemeriksaan Fisik (Objective)</label>
+                  <textarea 
+                    rows={2}
+                    className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none transition-shadow"
+                    value={vitalSigns}
+                    onChange={e => setVitalSigns(e.target.value)}
+                    placeholder="Contoh: TD 120/80, Suhu 38C..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-600 mb-1">Diagnosa (Assessment)</label>
+                  <input 
+                    className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none transition-shadow"
+                    value={diagnosis}
+                    onChange={e => setDiagnosis(e.target.value)}
+                    placeholder="Contoh: Febris H-3, Susp. Typoid..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Form Resep */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+              <h3 className="font-bold text-gray-700 border-b pb-2 mb-4">Resep Obat (Planning)</h3>
+              
+              {/* Input Bar */}
+              <form onSubmit={handleAddMedicine} className="bg-gray-50 p-4 rounded-xl mb-4 grid grid-cols-12 gap-3 items-end">
+                <div className="col-span-5">
+                   <label className="text-xs font-bold text-gray-500 uppercase">Nama Obat</label>
+                   <select 
+                      value={selectedMedId}
+                      onChange={e => setSelectedMedId(e.target.value)}
+                      className="w-full p-2.5 border rounded-lg bg-white mt-1"
+                   >
+                     <option value="">-- Pilih Obat --</option>
+                     {medicines.map(m => (
+                       <option key={m.id} value={m.id}>{m.name} (Stok: {m.stock})</option>
+                     ))}
+                   </select>
+                </div>
+                <div className="col-span-2">
+                   <label className="text-xs font-bold text-gray-500 uppercase">Jumlah</label>
+                   <input 
+                      type="number" min="1"
+                      value={quantity}
+                      onChange={e => setQuantity(parseInt(e.target.value))}
+                      className="w-full p-2.5 border rounded-lg mt-1"
+                   />
+                </div>
+                <div className="col-span-4">
+                   <label className="text-xs font-bold text-gray-500 uppercase">Aturan Pakai</label>
+                   <input 
+                      type="text"
+                      value={dosage}
+                      onChange={e => setDosage(e.target.value)}
+                      placeholder="3x1 sesudah makan"
+                      className="w-full p-2.5 border rounded-lg mt-1"
+                   />
+                </div>
+                <div className="col-span-1">
+                   <button type="submit" className="w-full bg-teal-700 text-white p-2.5 rounded-lg hover:bg-teal-800 flex justify-center items-center h-[42px]">
+                     <span className="material-symbols-outlined">add</span>
+                   </button>
+                </div>
+              </form>
+
+              {/* Tabel Obat */}
+              {cart.length > 0 ? (
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-100 text-gray-600 font-bold uppercase text-xs">
+                      <tr>
+                        <th className="p-3">Nama Obat</th>
+                        <th className="p-3">Jml</th>
+                        <th className="p-3">Aturan</th>
+                        <th className="p-3 text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {cart.map((item, idx) => (
+                        <tr key={idx} className="bg-white">
+                          <td className="p-3 font-medium text-gray-800">{item.med.name}</td>
+                          <td className="p-3">{item.qty}</td>
+                          <td className="p-3 text-gray-600">{item.dosage}</td>
+                          <td className="p-3 text-right">
+                            <button onClick={() => handleRemoveItem(idx)} className="text-red-500 hover:text-red-700 font-bold text-xs uppercase tracking-wide">Hapus</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-6 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                  <p className="text-gray-400 italic text-sm">Belum ada obat yang ditambahkan.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="fixed bottom-0 left-80 right-0 bg-white border-t p-4 flex justify-between items-center shadow-lg z-20">
+               <div className="text-sm text-gray-500 italic px-4">
+                  Pastikan semua data sudah benar sebelum disimpan.
+               </div>
+               <div className="flex gap-4">
+                 <button onClick={() => setActiveVisit(null)} className="px-6 py-2.5 rounded-lg text-gray-600 font-bold hover:bg-gray-100 transition-colors">
+                   Batal
+                 </button>
+                 <button onClick={handleSubmit} disabled={loading} className="flex items-center gap-2 px-8 py-2.5 bg-teal-700 text-white rounded-lg font-bold hover:bg-teal-800 disabled:opacity-50 shadow-lg shadow-teal-700/20 transition-all">
+                   {loading ? 'Menyimpan...' : (
+                     <><span className="material-symbols-outlined">check_circle</span> Selesai & Kirim</>
+                   )}
+                 </button>
+               </div>
+            </div>
+
           </div>
         ) : (
-          <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            
-            {/* Header Pasien */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex justify-between items-center">
-               <div>
-                  <h2 className="text-2xl font-bold text-[#172A3A]">{activeVisit.patient?.name}</h2>
-                  <div className="flex gap-4 text-sm text-gray-500 mt-1">
-                     <span>{activeVisit.patient?.nik}</span>
-                     <span>•</span>
-                     <span>{activeVisit.patient?.birthDate} (Usia: {new Date().getFullYear() - new Date(activeVisit.patient?.birthDate || '').getFullYear()} th)</span>
-                  </div>
-               </div>
-               <div className="text-right">
-                  <span className="block text-xs text-gray-400 font-bold uppercase">No. Antrian</span>
-                  <span className="text-3xl font-black text-blue-600">{activeVisit.queueNumber}</span>
-               </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-               
-               {/* KOLOM KIRI: SOAP FORM */}
-               <div className="lg:col-span-2 space-y-6">
-                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-                     <h3 className="font-bold text-[#004346] mb-4 flex items-center gap-2">
-                        <span className="material-symbols-outlined">clinical_notes</span> Rekam Medis (SOAP)
-                     </h3>
-                     <div className="space-y-4">
-                        <div>
-                           <label className="block text-sm font-bold text-gray-700 mb-1">Subjective (Keluhan Pasien)</label>
-                           <textarea 
-                              rows={3} 
-                              className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                              placeholder="Contoh: Demam sejak 3 hari lalu, pusing, mual..."
-                              value={soap.s} onChange={e => setSoap({...soap, s: e.target.value})}
-                           ></textarea>
-                        </div>
-                        <div>
-                           <label className="block text-sm font-bold text-gray-700 mb-1">Objective (Pemeriksaan Fisik)</label>
-                           <textarea 
-                              rows={3} 
-                              className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                              placeholder="Contoh: TD 120/80, Suhu 38C, Tenggorokan merah..."
-                              value={soap.o} onChange={e => setSoap({...soap, o: e.target.value})}
-                           ></textarea>
-                        </div>
-                        <div>
-                           <label className="block text-sm font-bold text-gray-700 mb-1">Assessment (Diagnosa)</label>
-                           <input 
-                              type="text"
-                              className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all font-semibold"
-                              placeholder="Contoh: ISPA, Febris"
-                              value={soap.a} onChange={e => setSoap({...soap, a: e.target.value})}
-                           />
-                        </div>
-                     </div>
-                  </div>
-               </div>
-
-               {/* KOLOM KANAN: E-PRESCRIPTION */}
-               <div className="lg:col-span-1 space-y-6">
-                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 h-full flex flex-col">
-                     <h3 className="font-bold text-[#004346] mb-4 flex items-center gap-2">
-                        <span className="material-symbols-outlined">pill</span> E-Prescription
-                     </h3>
-                     
-                     {/* Form Tambah Obat */}
-                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4 space-y-3">
-                        <select 
-                           value={selectedMedId} 
-                           onChange={(e) => setSelectedMedId(e.target.value)}
-                           className="w-full p-2 border rounded-lg text-sm"
-                        >
-                           <option value="">-- Pilih Obat --</option>
-                           {medicines.map(m => (
-                              <option key={m.id} value={m.id}>{m.name} (Stok: {m.stock})</option>
-                           ))}
-                        </select>
-                        <input 
-                           placeholder="Dosis (cth: 3x1)" 
-                           value={dosage} onChange={e => setDosage(e.target.value)}
-                           className="w-full p-2 border rounded-lg text-sm"
-                        />
-                        <div className="flex gap-2">
-                           <input 
-                              type="number" min="1" placeholder="Jml" 
-                              value={quantity} onChange={e => setQuantity(parseInt(e.target.value))}
-                              className="w-20 p-2 border rounded-lg text-sm"
-                           />
-                           <button 
-                              onClick={handleAddMedicine}
-                              disabled={!selectedMedId}
-                              className="flex-1 bg-[#004346] text-white rounded-lg text-sm font-bold hover:bg-[#003336] disabled:opacity-50"
-                           >
-                              + Tambah
-                           </button>
-                        </div>
-                     </div>
-
-                     {/* List Resep */}
-                     <div className="flex-1 overflow-y-auto space-y-2 mb-4 max-h-[300px]">
-                        {cart.length === 0 ? (
-                           <p className="text-center text-xs text-gray-400 italic mt-4">Belum ada resep.</p>
-                        ) : (
-                           cart.map((item, idx) => (
-                              <div key={idx} className="flex justify-between items-center p-3 bg-white border border-gray-100 rounded-lg shadow-sm text-sm">
-                                 <div>
-                                    <p className="font-bold text-slate-700">{item.med.name}</p>
-                                    <p className="text-xs text-slate-500">{item.dosage} • {item.qty} pcs</p>
-                                 </div>
-                                 <button onClick={() => handleRemoveMedicine(idx)} className="text-red-400 hover:text-red-600">
-                                    <span className="material-symbols-outlined text-[18px]">delete</span>
-                                 </button>
-                              </div>
-                           ))
-                        )}
-                     </div>
-                  </div>
-               </div>
-            </div>
-
-            {/* ACTION BUTTON */}
-            <div className="fixed bottom-0 left-80 right-0 p-4 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] flex justify-end items-center gap-4 z-20">
-               <p className="text-sm text-gray-500 italic mr-auto">
-                  Status akan berubah menjadi <span className="font-bold text-blue-600">Pharmacy</span> setelah disimpan.
-               </p>
-               <button 
-                  onClick={() => setActiveVisit(null)}
-                  className="px-6 py-2.5 rounded-lg text-gray-600 font-bold hover:bg-gray-100 transition-colors"
-               >
-                  Batal
-               </button>
-               <button 
-                  onClick={handleSubmit}
-                  disabled={loading}
-                  className="flex items-center gap-2 px-8 py-2.5 rounded-lg bg-[#004346] text-white font-bold hover:bg-[#003336] shadow-lg shadow-[#004346]/20 transition-all active:scale-95 disabled:opacity-70"
-               >
-                  {loading ? 'Menyimpan...' : (
-                     <>
-                        <span className="material-symbols-outlined">send</span> Selesai & Kirim
-                     </>
-                  )}
-               </button>
-            </div>
-            
-            {/* Spacer agar konten tidak tertutup fixed button */}
-            <div className="h-20"></div>
-
+          <div className="h-full flex flex-col items-center justify-center text-gray-300">
+            <span className="material-symbols-outlined text-8xl mb-4 text-gray-200">medical_services</span>
+            <p className="text-xl font-medium text-gray-400">Pilih pasien dari antrian untuk memulai pemeriksaan</p>
           </div>
         )}
-      </main>
+      </div>
+
+      {/* --- MODAL HISTORY PASIEN --- */}
+      {showHistoryModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+           <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+              <div className="p-5 border-b flex justify-between items-center bg-gray-50">
+                 <div>
+                    <h3 className="font-bold text-lg text-gray-800">Riwayat Medis</h3>
+                    <p className="text-sm text-gray-500">Pasien: {activeVisit ? getPatientName(activeVisit) : '-'}</p>
+                 </div>
+                 <button onClick={() => setShowHistoryModal(false)} className="text-gray-400 hover:text-gray-600 hover:bg-gray-200 p-2 rounded-full transition-colors">
+                    <span className="material-symbols-outlined">close</span>
+                 </button>
+              </div>
+              <div className="p-6 overflow-y-auto space-y-6 bg-slate-50">
+                 {historyVisits.length > 0 ? (
+                    historyVisits.map((h, idx) => (
+                      <div key={idx} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative">
+                         <div className="absolute top-5 right-5 text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded">
+                           {h.date}
+                         </div>
+                         <div className="mb-4 pr-16">
+                            <p className="font-bold text-teal-800 text-lg">{h.doctorName || 'Dokter Umum'}</p>
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold mt-1 inline-block uppercase tracking-wide">{h.status}</span>
+                         </div>
+                         
+                         {/* Hasil Medical Record */}
+                         <div className="grid grid-cols-1 gap-3 mb-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                            {h.medicalRecord ? (
+                              <>
+                                <div><span className="text-xs font-bold text-gray-400 uppercase block mb-1">Diagnosa (A)</span> <span className="font-medium text-gray-800">{h.medicalRecord.diagnosis}</span></div>
+                                <div><span className="text-xs font-bold text-gray-400 uppercase block mb-1">Keluhan (S)</span> <span className="text-sm text-gray-600">{h.medicalRecord.complaints}</span></div>
+                              </>
+                            ) : (
+                              <p className="text-sm text-gray-400 italic">Data medis tidak tersedia.</p>
+                            )}
+                         </div>
+
+                         {/* Hasil Resep */}
+                         {h.prescription && h.prescription.items.length > 0 && (
+                           <div>
+                             <p className="text-xs font-bold text-gray-400 uppercase mb-2">Obat Diberikan:</p>
+                             <div className="flex flex-wrap gap-2">
+                               {h.prescription.items.map((item, i) => (
+                                 <span key={i} className="text-xs px-3 py-1 bg-blue-50 border border-blue-100 rounded-full text-blue-700 font-medium">
+                                   {item.medicineName} <span className="opacity-70">({item.quantity})</span>
+                                 </span>
+                               ))}
+                             </div>
+                           </div>
+                         )}
+                      </div>
+                    ))
+                 ) : (
+                    <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                       <span className="material-symbols-outlined text-4xl mb-2 opacity-50">history_edu</span>
+                       <p>Belum ada riwayat medis sebelumnya.</p>
+                    </div>
+                 )}
+              </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 };

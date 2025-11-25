@@ -340,6 +340,26 @@
       "phone": "-",
       "type": "Umum",
       "createdAt": "2025-11-25"
+    },
+    {
+      "id": "p-1764034255689",
+      "name": "lio",
+      "nik": "123123123",
+      "address": "dsfsadlifasf",
+      "birthDate": "2025-11-16",
+      "phone": "12313123123",
+      "type": "Umum",
+      "createdAt": "2025-11-25"
+    },
+    {
+      "id": "p-1764037897933",
+      "name": "gg",
+      "nik": "323",
+      "address": "fdfd",
+      "birthDate": "2025-11-05",
+      "phone": "24242",
+      "type": "Umum",
+      "createdAt": "2025-11-25"
     }
   ],
   "visits": [
@@ -398,22 +418,35 @@
       "status": "done"
     },
     {
-      "id": "v-1764029996868",
-      "patientId": "p-1764029996858",
-      "doctorId": "doc3",
-      "date": "2025-11-25",
-      "queueNumber": "E-001",
-      "isEmergency": true,
-      "status": "pharmacy"
-    },
-    {
       "id": "v-1764030075001",
       "patientId": "p-1764029547836",
       "doctorId": "doc3",
       "date": "2025-11-25",
       "queueNumber": "A-002",
       "isEmergency": false,
-      "status": "examining"
+      "status": "done",
+      "medicalRecord": {
+        "id": "mr-1764037184383",
+        "visitId": "v-1764030075001",
+        "complaints": "baingus",
+        "vitalSigns": "ingus",
+        "diagnosis": "flu"
+      },
+      "prescription": {
+        "id": "pr-1764037184383",
+        "visitId": "v-1764030075001",
+        "status": "processed",
+        "items": [
+          {
+            "medicineId": "m2",
+            "medicineName": "Amoxicillin 500mg",
+            "dosage": "2x1",
+            "quantity": 1,
+            "price": 12000
+          }
+        ]
+      },
+      "patientName": "Tanpa Nama"
     },
     {
       "id": "v-1764030580204",
@@ -423,6 +456,275 @@
       "queueNumber": "A-003",
       "isEmergency": false,
       "status": "done"
+    },
+    {
+      "id": "v-1764034255715",
+      "patientId": "p-1764034255689",
+      "doctorId": "doc2",
+      "date": "2025-11-25",
+      "queueNumber": "A-001",
+      "isEmergency": false,
+      "status": "done",
+      "patientName": "",
+      "medicalRecord": {
+        "id": "mr-1764035168508",
+        "visitId": "v-1764034255715",
+        "complaints": "panas",
+        "vitalSigns": "38c",
+        "diagnosis": "tipes dan demam berdarah"
+      },
+      "prescription": {
+        "id": "pr-1764035168508",
+        "visitId": "v-1764034255715",
+        "status": "processed",
+        "items": [
+          {
+            "medicineId": "m2",
+            "medicineName": "Amoxicillin 500mg",
+            "dosage": "3x1",
+            "quantity": 3,
+            "price": 12000
+          },
+          {
+            "medicineId": "m2",
+            "medicineName": "Amoxicillin 500mg",
+            "dosage": "3x1",
+            "quantity": 1,
+            "price": 12000
+          }
+        ]
+      }
+    },
+    {
+      "id": "v-1764035263180",
+      "patientId": "p-1763813572330",
+      "doctorId": "doc3",
+      "date": "2025-11-25",
+      "queueNumber": "A-003",
+      "isEmergency": false,
+      "status": "done",
+      "patientName": "Tanpa Nama",
+      "medicalRecord": {
+        "id": "mr-1764035367903",
+        "visitId": "v-1764035263180",
+        "complaints": "bbb",
+        "vitalSigns": "ff",
+        "diagnosis": "dd"
+      },
+      "prescription": {
+        "id": "pr-1764035367903",
+        "visitId": "v-1764035263180",
+        "status": "processed",
+        "items": [
+          {
+            "medicineId": "m1",
+            "medicineName": "Paracetamol 500mg",
+            "dosage": "3x1",
+            "quantity": 5,
+            "price": 5000
+          }
+        ]
+      }
+    },
+    {
+      "id": "v-1764035399083",
+      "patientId": "p-1763813572330",
+      "doctorId": "doc3",
+      "date": "2025-11-25",
+      "queueNumber": "A-004",
+      "isEmergency": false,
+      "status": "done",
+      "patientName": "Tanpa Nama",
+      "medicalRecord": {
+        "id": "mr-1764036538380",
+        "visitId": "v-1764035399083",
+        "complaints": "demam",
+        "vitalSigns": "suhu tinggi",
+        "diagnosis": "tbc"
+      },
+      "prescription": {
+        "id": "pr-1764036538380",
+        "visitId": "v-1764035399083",
+        "status": "processed",
+        "items": [
+          {
+            "medicineId": "m1",
+            "medicineName": "Paracetamol 500mg",
+            "dosage": "2x1",
+            "quantity": 8,
+            "price": 5000
+          },
+          {
+            "medicineId": "m2",
+            "medicineName": "Amoxicillin 500mg",
+            "dosage": "3x1",
+            "quantity": 3,
+            "price": 12000
+          }
+        ]
+      }
+    },
+    {
+      "id": "v-1764035967944",
+      "patientId": "p-1763813572330",
+      "doctorId": "doc3",
+      "date": "2025-11-25",
+      "queueNumber": "A-005",
+      "isEmergency": false,
+      "status": "done",
+      "patientName": "Tanpa Nama",
+      "medicalRecord": {
+        "id": "mr-1764036824602",
+        "visitId": "v-1764035967944",
+        "complaints": "sakit perut",
+        "vitalSigns": "usus memerah",
+        "diagnosis": "usus buntu"
+      },
+      "prescription": {
+        "id": "pr-1764036824602",
+        "visitId": "v-1764035967944",
+        "status": "processed",
+        "items": [
+          {
+            "medicineId": "m1",
+            "medicineName": "Paracetamol 500mg",
+            "dosage": "3x1",
+            "quantity": 1,
+            "price": 5000
+          }
+        ]
+      }
+    },
+    {
+      "id": "v-1764037298150",
+      "patientId": "p-1763993913250",
+      "doctorId": "doc5",
+      "date": "2025-11-25",
+      "queueNumber": "A-001",
+      "isEmergency": false,
+      "status": "done",
+      "patientName": "Tanpa Nama",
+      "medicalRecord": {
+        "id": "mr-1764037339804",
+        "visitId": "v-1764037298150",
+        "complaints": "sakit",
+        "vitalSigns": "sakit",
+        "diagnosis": "sakit"
+      },
+      "prescription": {
+        "id": "pr-1764037339804",
+        "visitId": "v-1764037298150",
+        "status": "processed",
+        "items": [
+          {
+            "medicineId": "m1",
+            "medicineName": "Paracetamol 500mg",
+            "dosage": "2x1",
+            "quantity": 2,
+            "price": 5000
+          }
+        ]
+      }
+    },
+    {
+      "id": "v-1764037561978",
+      "patientId": "p-1763996901776",
+      "doctorId": "doc1",
+      "date": "2025-11-25",
+      "queueNumber": "A-001",
+      "isEmergency": false,
+      "status": "done",
+      "patientName": "Tanpa Nama",
+      "medicalRecord": {
+        "id": "mr-1764037598388",
+        "visitId": "v-1764037561978",
+        "complaints": "sakit",
+        "vitalSigns": "sakit",
+        "diagnosis": "sakit"
+      },
+      "prescription": {
+        "id": "pr-1764037598388",
+        "visitId": "v-1764037561978",
+        "status": "processed",
+        "items": [
+          {
+            "medicineId": "m1",
+            "medicineName": "Paracetamol 500mg",
+            "dosage": "2x1",
+            "quantity": 5,
+            "price": 5000
+          }
+        ]
+      }
+    },
+    {
+      "id": "v-1764037897945",
+      "patientId": "p-1764037897933",
+      "doctorId": "doc3",
+      "date": "2025-11-25",
+      "queueNumber": "A-001",
+      "isEmergency": false,
+      "status": "done",
+      "patientName": "Tanpa Nama",
+      "medicalRecord": {
+        "id": "mr-1764037977351",
+        "visitId": "v-1764037897945",
+        "complaints": "batuk",
+        "vitalSigns": "40c",
+        "diagnosis": "tipes"
+      },
+      "prescription": {
+        "id": "pr-1764037977351",
+        "visitId": "v-1764037897945",
+        "status": "processed",
+        "items": [
+          {
+            "medicineId": "m1",
+            "medicineName": "Paracetamol 500mg",
+            "dosage": "3x1",
+            "quantity": 4,
+            "price": 5000
+          },
+          {
+            "medicineId": "m2",
+            "medicineName": "Amoxicillin 500mg",
+            "dosage": "2x1",
+            "quantity": 1,
+            "price": 12000
+          }
+        ]
+      }
+    },
+    {
+      "id": "v-1764038070609",
+      "patientId": "p-1763813552016",
+      "doctorId": "doc4",
+      "date": "2025-11-25",
+      "queueNumber": "A-001",
+      "isEmergency": false,
+      "status": "payment",
+      "patientName": "",
+      "medicalRecord": {
+        "id": "mr-1764038109680",
+        "visitId": "v-1764038070609",
+        "complaints": "batuk",
+        "vitalSigns": "batuk",
+        "diagnosis": "flu"
+      },
+      "prescription": {
+        "id": "pr-1764038109680",
+        "visitId": "v-1764038070609",
+        "status": "processed",
+        "items": [
+          {
+            "medicineId": "m1",
+            "medicineName": "Paracetamol 500mg",
+            "dosage": "1x1",
+            "quantity": 5,
+            "price": 5000
+          }
+        ]
+      }
     }
   ],
   "doctorSchedules": [
@@ -468,7 +770,7 @@
       "id": "m1",
       "name": "Paracetamol 500mg",
       "price": 5000,
-      "stock": 78
+      "stock": 73
     },
     {
       "id": "m2",
@@ -550,7 +852,7 @@
     },
     {
       "id": "mr-1764030167724",
-      "visitId": "v-1764029996868",
+      "visitId": null,
       "complaints": "susing",
       "vitalSigns": "tumor",
       "diagnosis": "kanker ganas"
@@ -650,7 +952,7 @@
     },
     {
       "id": "pr-1764030167735",
-      "visitId": "v-1764029996868",
+      "visitId": null,
       "status": "pending",
       "items": [
         {
@@ -938,6 +1240,195 @@
           "quantity": 1,
           "price": 150000,
           "type": "service"
+        }
+      ]
+    },
+    {
+      "id": "INV-1764037105671",
+      "visitId": "v-1764034255715",
+      "patientName": "Tanpa Nama",
+      "description": "Tagihan Obat & Jasa (Visit: 2025-11-25)",
+      "amount": 48000,
+      "status": "paid",
+      "date": "2025-11-25",
+      "items": [
+        {
+          "id": "m2",
+          "name": "Amoxicillin 500mg",
+          "quantity": 3,
+          "price": 12000,
+          "type": "medicine"
+        },
+        {
+          "id": "m2",
+          "name": "Amoxicillin 500mg",
+          "quantity": 1,
+          "price": 12000,
+          "type": "medicine"
+        }
+      ]
+    },
+    {
+      "id": "INV-1764037117205",
+      "visitId": "v-1764035263180",
+      "patientName": "Tanpa Nama",
+      "description": "Tagihan Obat & Jasa (Visit: 2025-11-25)",
+      "amount": 25000,
+      "status": "paid",
+      "date": "2025-11-25",
+      "items": [
+        {
+          "id": "m1",
+          "name": "Paracetamol 500mg",
+          "quantity": 5,
+          "price": 5000,
+          "type": "medicine"
+        }
+      ]
+    },
+    {
+      "id": "INV-1764037126988",
+      "visitId": "v-1764035399083",
+      "patientName": "Tanpa Nama",
+      "description": "Tagihan Obat & Jasa (Visit: 2025-11-25)",
+      "amount": 76000,
+      "status": "paid",
+      "date": "2025-11-25",
+      "items": [
+        {
+          "id": "m1",
+          "name": "Paracetamol 500mg",
+          "quantity": 8,
+          "price": 5000,
+          "type": "medicine"
+        },
+        {
+          "id": "m2",
+          "name": "Amoxicillin 500mg",
+          "quantity": 3,
+          "price": 12000,
+          "type": "medicine"
+        }
+      ]
+    },
+    {
+      "id": "INV-1764037135507",
+      "visitId": "v-1764035967944",
+      "patientName": "Tanpa Nama",
+      "description": "Tagihan Obat & Jasa (Visit: 2025-11-25)",
+      "amount": 5000,
+      "status": "paid",
+      "date": "2025-11-25",
+      "items": [
+        {
+          "id": "m1",
+          "name": "Paracetamol 500mg",
+          "quantity": 1,
+          "price": 5000,
+          "type": "medicine"
+        }
+      ]
+    },
+    {
+      "id": "INV-1764037275375",
+      "visitId": "v-1764030075001",
+      "patientName": "Tanpa Nama",
+      "description": "Tagihan Obat & Jasa (Visit: 2025-11-25)",
+      "amount": 12000,
+      "status": "paid",
+      "date": "2025-11-25",
+      "items": [
+        {
+          "id": "m2",
+          "name": "Amoxicillin 500mg",
+          "quantity": 1,
+          "price": 12000,
+          "type": "medicine"
+        }
+      ]
+    },
+    {
+      "id": "INV-1764037651020",
+      "visitId": "v-1764037298150",
+      "patientName": "injilio",
+      "description": "Tagihan Obat & Jasa (Tgl: 2025-11-25)",
+      "amount": 10000,
+      "status": "paid",
+      "date": "2025-11-25",
+      "items": [
+        {
+          "id": "m1",
+          "name": "Paracetamol 500mg",
+          "quantity": 2,
+          "price": 5000,
+          "type": "medicine"
+        }
+      ]
+    },
+    {
+      "id": "INV-1764037665652",
+      "patientName": "Tanpa Nama",
+      "description": "Farmasi & Poli (No. Antrian A-001)",
+      "amount": 186000,
+      "status": "paid",
+      "date": "2025-11-25",
+      "items": [
+        {
+          "id": "m2",
+          "name": "Amoxicillin 500mg",
+          "quantity": 3,
+          "price": 36000,
+          "type": "medicine"
+        },
+        {
+          "id": "svc-doc",
+          "name": "Jasa Konsultasi Dokter",
+          "quantity": 1,
+          "price": 150000,
+          "type": "service"
+        }
+      ]
+    },
+    {
+      "id": "INV-1764037815622",
+      "visitId": "v-1764037561978",
+      "patientName": "agvina",
+      "description": "Tagihan Obat & Jasa (Tgl: 2025-11-25)",
+      "amount": 25000,
+      "status": "paid",
+      "date": "2025-11-25",
+      "items": [
+        {
+          "id": "m1",
+          "name": "Paracetamol 500mg",
+          "quantity": 5,
+          "price": 5000,
+          "type": "medicine"
+        }
+      ]
+    },
+    {
+      "id": "INV-1764038047410",
+      "visitId": "v-1764037897945",
+      "patientName": "gg",
+      "description": "Tagihan Obat & Jasa (Tgl: 2025-11-25)",
+      "amount": 32000,
+      "status": "paid",
+      "date": "2025-11-25",
+      "items": [
+        {
+          "id": "m1",
+          "name": "Paracetamol 500mg",
+          "quantity": 4,
+          "price": 5000,
+          "type": "medicine"
+        },
+        {
+          "id": "m2",
+          "name": "Amoxicillin 500mg",
+          "quantity": 1,
+          "price": 12000,
+          "type": "medicine"
         }
       ]
     }

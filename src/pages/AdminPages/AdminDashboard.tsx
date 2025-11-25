@@ -101,13 +101,14 @@ const AdminDashboard: React.FC = () => {
     const existingQueue = visits.filter(v => v.doctorId === doctorId && v.date === today).length;
     const queueNumber = queueCode + (existingQueue + 1).toString().padStart(3, '0');
     
-    await api.addVisit({ 
-        patientId, 
-        doctorId: doctorId, 
-        date: today, 
-        queueNumber, 
-        isEmergency, 
-        status: 'waiting' 
+    await api.addVisit({
+      patientId,
+      doctorId: doctorId,
+      date: today,
+      queueNumber,
+      isEmergency,
+      status: 'waiting',
+      patientName: ''
     });
     
     loadData();
