@@ -733,7 +733,7 @@
       "date": "2025-11-25",
       "queueNumber": "A-002",
       "isEmergency": false,
-      "status": "payment",
+      "status": "done",
       "patientName": "",
       "medicalRecord": {
         "id": "mr-1764040622543",
@@ -1454,6 +1454,24 @@
           "price": 5000,
           "type": "medicine"
         },
+        {
+          "id": "m2",
+          "name": "Amoxicillin 500mg",
+          "quantity": 1,
+          "price": 12000,
+          "type": "medicine"
+        }
+      ]
+    },
+    {
+      "id": "INV-1764040994868",
+      "visitId": "v-1764040535252",
+      "patientName": "injilioo",
+      "description": "Tagihan Obat & Jasa (Tgl: 2025-11-25)",
+      "amount": 12000,
+      "status": "paid",
+      "date": "2025-11-25",
+      "items": [
         {
           "id": "m2",
           "name": "Amoxicillin 500mg",
