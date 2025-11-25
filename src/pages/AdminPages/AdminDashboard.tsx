@@ -42,7 +42,20 @@ const AdminDashboard: React.FC = () => {
   const getTodayDayName = () => new Date().toLocaleDateString('id-ID', { weekday: 'long' });
   const getTodayDateFull = () => new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
 
-  useEffect(() => { if (activeTab === 'dashboard') { loadData(); } }, [activeTab]);
+  // --- PERBAIKAN: REAL-TIME UPDATE ---
+  useEffect(() => { 
+    if (activeTab === 'dashboard') { 
+      loadData(); // Load pertama kali
+      
+      // Auto-refresh setiap 5 detik agar jadwal & antrian selalu update
+      const interval = setInterval(() => {
+        loadData();
+      }, 5000);
+
+      // Bersihkan interval saat pindah tab agar tidak memory leak
+      return () => clearInterval(interval);
+    } 
+  }, [activeTab]);
 
   const loadData = async () => {
     try {
@@ -83,7 +96,7 @@ const AdminDashboard: React.FC = () => {
     }
 
     const queueCode = isEmergency ? 'E-' : 'A-';
-    // Hitung antrian per dokter untuk hari ini (opsional: bisa dibuat lebih kompleks)
+    // Hitung antrian per dokter untuk hari ini
     const today = new Date().toISOString().split('T')[0];
     const existingQueue = visits.filter(v => v.doctorId === doctorId && v.date === today).length;
     const queueNumber = queueCode + (existingQueue + 1).toString().padStart(3, '0');
@@ -116,7 +129,7 @@ const AdminDashboard: React.FC = () => {
     if (query.length > 1) { 
        // Cari pasien berdasarkan Nama atau NIK
        const results = await api.searchPatients(query);
-       // Filter client-side tambahan untuk akurasi (opsional)
+       // Filter client-side tambahan untuk akurasi
        const filtered = results.filter(p => 
          p.name.toLowerCase().includes(query.toLowerCase()) || 
          p.nik.includes(query)
@@ -193,6 +206,8 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleLogout = () => window.location.reload();
+  
+  // Hitung jumlah dokter yang praktek hari ini
   const activeDoctorsCount = doctorSchedules.filter(ds => ds.day === getTodayDayName() && ds.status === 'Praktek').length;
 
   return (
@@ -237,7 +252,7 @@ const AdminDashboard: React.FC = () => {
                 <h2 className="text-xl font-bold text-dark-elements mb-4 flex items-center gap-2"><span className="material-symbols-outlined text-accent-cta">bolt</span> Aksi Cepat</h2>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                   
-                  {/* CARD 1: CARI PASIEN LAMA (FUNGSI UTAMA DIPERBAIKI) */}
+                  {/* CARD 1: CARI PASIEN LAMA */}
                   <div className="flex flex-col gap-4 rounded-xl bg-white p-6 shadow-sm border border-transparent hover:border-blue-200 transition-colors relative z-20">
                     <div className="flex justify-between items-center">
                        <p className="text-base font-bold text-dark-elements">Cari Pasien Lama</p>
@@ -254,7 +269,7 @@ const AdminDashboard: React.FC = () => {
                       >
                         <option value="">-- Pilih Dokter --</option>
                         {doctorsList.map(doc => (
-                          <option key={doc.id} value={doc.id}>{doc.name} ({doc.specialty})</option>
+                          <option key={doc.id} value={doc.id}>{doc.name} ({doc.specialty || 'Umum'})</option>
                         ))}
                       </select>
                     </div>
@@ -334,7 +349,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="lg:col-span-2">
                   <h2 className="text-xl font-bold text-dark-elements mb-4 flex items-center justify-between">
                     <span>Antrian Langsung</span>
-                    <span className="text-xs bg-white px-3 py-1 rounded-full border border-gray-200 text-gray-500">Realtime</span>
+                    <span className="text-xs bg-white px-3 py-1 rounded-full border border-gray-200 text-gray-500 flex items-center gap-1"><span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Realtime</span>
                   </h2>
                   <div className="overflow-hidden rounded-xl bg-white shadow-sm border border-gray-100">
                     <table className="w-full text-left text-sm text-text-main">

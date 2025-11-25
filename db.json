@@ -71,6 +71,21 @@
       "name": "chritian",
       "username": "tian",
       "role": "admin"
+    },
+    {
+      "id": "u-1764028549542",
+      "name": "injilio oroh",
+      "username": "lio18",
+      "password": "1234",
+      "role": "doctor"
+    },
+    {
+      "id": "u-1764029040521",
+      "name": "juffri",
+      "username": "juf",
+      "password": "12321",
+      "role": "doctor",
+      "specialty": "jantung"
     }
   ],
   "patients": [
@@ -305,6 +320,26 @@
       "phone": "8234567",
       "type": "Umum",
       "createdAt": "2025-11-24"
+    },
+    {
+      "id": "p-1764029547836",
+      "name": "christian",
+      "nik": "123123",
+      "address": "daronsong",
+      "birthDate": "2025-11-19",
+      "phone": "324",
+      "type": "BPJS",
+      "createdAt": "2025-11-25"
+    },
+    {
+      "id": "p-1764029996858",
+      "name": "INjilio",
+      "nik": "DARURAT-1764029996858",
+      "address": "Data Menyusul (IGD)",
+      "birthDate": "1900-01-01",
+      "phone": "-",
+      "type": "Umum",
+      "createdAt": "2025-11-25"
     }
   ],
   "visits": [
@@ -352,33 +387,45 @@
       "queueNumber": "A-001",
       "isEmergency": false,
       "status": "done"
+    },
+    {
+      "id": "v-1764029547849",
+      "patientId": "p-1764029547836",
+      "doctorId": "doc2",
+      "date": "2025-11-25",
+      "queueNumber": "A-001",
+      "isEmergency": false,
+      "status": "done"
+    },
+    {
+      "id": "v-1764029996868",
+      "patientId": "p-1764029996858",
+      "doctorId": "doc3",
+      "date": "2025-11-25",
+      "queueNumber": "E-001",
+      "isEmergency": true,
+      "status": "pharmacy"
+    },
+    {
+      "id": "v-1764030075001",
+      "patientId": "p-1764029547836",
+      "doctorId": "doc3",
+      "date": "2025-11-25",
+      "queueNumber": "A-002",
+      "isEmergency": false,
+      "status": "examining"
+    },
+    {
+      "id": "v-1764030580204",
+      "patientId": "p-1763813552016",
+      "doctorId": "doc3",
+      "date": "2025-11-25",
+      "queueNumber": "A-003",
+      "isEmergency": false,
+      "status": "done"
     }
   ],
   "doctorSchedules": [
-    {
-      "id": "ds1",
-      "doctorId": "doc1",
-      "name": "dr. Hartono, Sp.PD",
-      "specialty": "Spesialis Penyakit Dalam",
-      "day": "Senin",
-      "time": "08:00 - 14:00",
-      "status": "Praktek",
-      "quota": 20,
-      "filled": 15,
-      "image": "https://i.pravatar.cc/150?img=11"
-    },
-    {
-      "id": "ds2",
-      "doctorId": "doc2",
-      "name": "dr. Anisa, Sp.A",
-      "specialty": "Spesialis Anak",
-      "day": "Senin",
-      "time": "09:00 - 15:00",
-      "status": "Praktek",
-      "quota": 25,
-      "filled": 18,
-      "image": "https://i.pravatar.cc/150?img=5"
-    },
     {
       "id": "ds-1763730862837",
       "doctorId": "doc3",
@@ -402,6 +449,18 @@
       "filled": 0,
       "image": "https://i.pravatar.cc/150?img=9",
       "id": "ds-1763813514445"
+    },
+    {
+      "id": "ds-1764029404482",
+      "doctorId": "doc4",
+      "name": "dr. Dion, Sp.OG",
+      "specialty": "Spesialis Kandungan",
+      "day": "Selasa",
+      "time": "08:00 - 14:00",
+      "status": "Praktek",
+      "quota": 20,
+      "filled": 0,
+      "image": "https://i.pravatar.cc/150?img=9"
     }
   ],
   "medicines": [
@@ -409,7 +468,7 @@
       "id": "m1",
       "name": "Paracetamol 500mg",
       "price": 5000,
-      "stock": 90
+      "stock": 78
     },
     {
       "id": "m2",
@@ -481,6 +540,27 @@
       "complaints": "sakit perut",
       "vitalSigns": "kemerahan lambung",
       "diagnosis": "maag"
+    },
+    {
+      "id": "mr-1764029658110",
+      "visitId": "v-1764029547849",
+      "complaints": "demam",
+      "vitalSigns": "tenggorokan merah",
+      "diagnosis": "trombosit turun, virus infected unidentified"
+    },
+    {
+      "id": "mr-1764030167724",
+      "visitId": "v-1764029996868",
+      "complaints": "susing",
+      "vitalSigns": "tumor",
+      "diagnosis": "kanker ganas"
+    },
+    {
+      "id": "mr-1764030689968",
+      "visitId": "v-1764030580204",
+      "complaints": "demam",
+      "vitalSigns": "suhu 38c",
+      "diagnosis": "demam"
     }
   ],
   "prescriptions": [
@@ -551,6 +631,34 @@
           "price": 5000,
           "dosage": "3x1",
           "quantity": 2
+        }
+      ]
+    },
+    {
+      "id": "pr-1764029658121",
+      "visitId": "v-1764029547849",
+      "status": "pending",
+      "items": [
+        {
+          "medicineId": "m1",
+          "medicineName": "Paracetamol 500mg",
+          "price": 5000,
+          "dosage": "3x1",
+          "quantity": 7
+        }
+      ]
+    },
+    {
+      "id": "pr-1764030167735",
+      "visitId": "v-1764029996868",
+      "status": "pending",
+      "items": [
+        {
+          "medicineId": "m1",
+          "medicineName": "Paracetamol 500mg",
+          "price": 5000,
+          "dosage": "23213",
+          "quantity": 1
         }
       ]
     }
@@ -772,6 +880,56 @@
           "name": "Paracetamol 500mg",
           "quantity": 2,
           "price": 10000,
+          "type": "medicine"
+        },
+        {
+          "id": "svc-doc",
+          "name": "Jasa Konsultasi Dokter",
+          "quantity": 1,
+          "price": 150000,
+          "type": "service"
+        }
+      ]
+    },
+    {
+      "id": "INV-1764029774140",
+      "visitId": "v-1764029547849",
+      "patientName": "christian",
+      "description": "Farmasi & Poli (No. A-001)",
+      "amount": 185000,
+      "status": "paid",
+      "date": "2025-11-25",
+      "items": [
+        {
+          "id": "m1",
+          "name": "Paracetamol 500mg",
+          "quantity": 7,
+          "price": 35000,
+          "type": "medicine"
+        },
+        {
+          "id": "svc-doc",
+          "name": "Jasa Konsultasi Dokter",
+          "quantity": 1,
+          "price": 150000,
+          "type": "service"
+        }
+      ]
+    },
+    {
+      "id": "INV-1764030728596",
+      "visitId": "v-1764030580204",
+      "patientName": "ariel",
+      "description": "Farmasi & Poli (No. A-003)",
+      "amount": 175000,
+      "status": "paid",
+      "date": "2025-11-25",
+      "items": [
+        {
+          "id": "m1",
+          "name": "Paracetamol 500mg",
+          "quantity": 5,
+          "price": 25000,
           "type": "medicine"
         },
         {
